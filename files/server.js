@@ -16,7 +16,7 @@ app.use(express.static("./static"));
  * Query parameters: None
  * Notes: Goes very slow, should only be used to update OUR database, every so often.
  */
-app.get("/get-countries", function (req, res) {
+app.get("/getCountries", function (req, res) {
     let URL = "http://apps.who.int/gho/athena/api/COUNTRY?format=json";
     request.get(URL, function (error, response, body) {
         let json = JSON.parse(body);
@@ -45,7 +45,7 @@ app.get("/get-countries", function (req, res) {
  * Query parameters: indicator (Label for an indicator) EX: WHOSIS_000012
  * Notes: see notes for /get-countries
  */
-app.get("/get-indicator", function (req, res) {
+app.get("/getIndicator", function (req, res) {
     let indicator = req.query.indicator;
     let URL = "http://apps.who.int/gho/athena/api/GHO/" + indicator + "?format=json&profile=simple";
     request.get(URL, function (error, response, body) {
