@@ -43,6 +43,12 @@ app.get("/getCountries", function (req, res) {
             let label = countries[i].label; // USA
             let display = countries[i].display; // United States of America
             output[label] = display;
+            var statement = 'INSERT INTO Country (CountryShort,DisplayName ) VALUES (' +label + ',' + display + ');'
+            conn.query(statement,
+              function(err, rows, fields) {
+                if (err) {
+                  console.log('Error during query insert');
+                }})
         }
 
         res.json(output);
@@ -78,7 +84,7 @@ app.get("/getIndicator", function (req, res) {
             data.year = dataPoints[i].dim.YEAR; // 2006...
             data.sex = dataPoints[i].dim.SEX; // Female
             data.region = dataPoints[i].dim.REGION; // Americas
-            data.value = dataPoints[i].dim.Value; //
+            data.value = dataPoints[i].Value; //
             //output.results.push(data);
             var statement = 'INSERT INTO IndicatorValue (Year,Value,Sex,CountryShort,RegionShort,IndicatorShort) VALUES (' + data.year +  ',' + data.value +  ',' +',' + data.sex + ',' + data.country + ',' + data.region + ',' + indicator + ');'
             conn.query(statement,
