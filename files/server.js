@@ -38,12 +38,27 @@ app.get("/getCountries", function (req, res) {
         // Or add a seperate URL to
         // Todo: Update to modify database
         // Remember: Country may already exist in the database.
+        var statement = 'INSERT INTO Country (CountryShort,DisplayName ) VALUES'
+
         output = {};
         for (let i = 0; i < countries.length; i++) {
             let label = countries[i].label; // USA
             let display = countries[i].display; // United States of America
             output[label] = display;
-            var statement = 'INSERT INTO Country (CountryShort,DisplayName ) VALUES (' +label + ',' + display + ');'
+            if( i != 0 ) {
+                statement += ","
+            }
+            statement += '(' +label + ',' + display + ')';
+            conn.query(statement,
+                function(err, rows, fields) {
+                        if (err) {
+                            console.log('Error during query insert');
+                            console.log(err);
+                            res.send(err);
+                        } else {
+                            res.send('good');
+                        }})
+                      }
             conn.query(statement,
               function(err, rows, fields) {
                 if (err) {
@@ -78,22 +93,32 @@ app.get("/getIndicator", function (req, res) {
             "results": []
         };
 
+        var statement = 'INSERT INTO IndicatorValue (Year,Value,Sex,CountryShort,RegionShort,IndicatorShort) VALUES ';
+
         for (let i = 0; i < dataPoints.length; i++) {
             let data = {}
-            data.country = dataPoints[i].dim.COUNTRY; // Argentina
-            data.year = dataPoints[i].dim.YEAR; // 2006...
-            data.sex = dataPoints[i].dim.SEX; // Female
-            data.region = dataPoints[i].dim.REGION; // Americas
-            data.value = dataPoints[i].Value; //
+            data.country = mysql.escape(dataPoints[i].dim.COUNTRY); // Argentina
+            data.year = mysql.escape(dataPoints[i].dim.YEAR); // 2006...
+            data.sex = mysql.escape(dataPoints[i].dim.SEX.substring(0,1)); // Female
+            data.region = mysql.escape(dataPoints[i].dim.REGION); // Americas
+            data.value = mysql.escape(dataPoints[i].Value);
             //output.results.push(data);
-            var statement = 'INSERT INTO IndicatorValue (Year,Value,Sex,CountryShort,RegionShort,IndicatorShort) VALUES (' + data.year +  ',' + data.value +  ',' +',' + data.sex + ',' + data.country + ',' + data.region + ',' + indicator + ');'
-            conn.query(statement,
-              function(err, rows, fields) {
-                if (err) {
-                  console.log('Error during query insert');
-                }})
-
+            if( i != 0 ) {
+                statement += ","
+            }
+            statement += '(' + data.year +  ',' + data.value +  ',' + data.sex + ',' + data.country + ',' + data.region + ',' + indicator + ')';
         }
+
+        statement += ";";
+        conn.query(statement,
+            function(err, rows, fields) {
+                    if (err) {
+                        console.log('Error during query insert');
+                        console.log(err);
+                        res.send(err);
+                    } else {
+                        res.send('good');
+                    }})
 
         res.json(output);
         res.end();
