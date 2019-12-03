@@ -4,8 +4,6 @@ let request = require("request");
 let bodyParser = require("body-parser"); // for posting form data
 let mysql = require("mysql");
 
-var dbPass = require('../mysqlkey.json')
-
 var app = express();
 
 /* Endpoints */
@@ -15,10 +13,10 @@ app.use(express.static("./static"));
 
 var conn = mysql.createConnection(
   {
-  host  : dbPass.host,
-  user  : dbPass.user,
-  password  : dbPass.password,
-  database  : dbPass.database,
+	host: "localhost",
+	user: "nodejs",
+	password: "MyN0dePass",
+	database: "who_data",
   multipleStatements: true
 }
 )
@@ -72,22 +70,31 @@ app.get("/getIndicator", function (req, res) {
             "results": []
         };
 
+        var statement = 'INSERT INTO IndicatorValue (Year,Value,Sex,CountryShort,RegionShort,IndicatorShort) VALUES ';
+
         for (let i = 0; i < dataPoints.length; i++) {
             let data = {}
-            data.country = dataPoints[i].dim.COUNTRY; // Argentina
-            data.year = dataPoints[i].dim.YEAR; // 2006...
-            data.sex = dataPoints[i].dim.SEX; // Female
-            data.region = dataPoints[i].dim.REGION; // Americas
-            data.value = dataPoints[i].dim.Value; //
+            data.country = mysql.escape(dataPoints[i].dim.COUNTRY); // Argentina
+            data.year = mysql.escape(dataPoints[i].dim.YEAR); // 2006...
+            data.sex = mysql.escape(dataPoints[i].dim.SEX.substring(0,1)); // Female
+            data.region = mysql.escape(dataPoints[i].dim.REGION); // Americas
+            data.value = mysql.escape(dataPoints[i].Value);
             //output.results.push(data);
-            var statement = 'INSERT INTO IndicatorValue (Year,Value,Sex,CountryShort,RegionShort,IndicatorShort) VALUES (' + data.year +  ',' + data.value +  ',' +',' + data.sex + ',' + data.country + ',' + data.region + ',' + indicator + ');'
-            conn.query(statement,
-              function(err, rows, fields) {
-                if (err) {
-                  console.log('Error during query insert');
-                }})
-
+            if( i != 0 ) {
+                statement += ","
+            }
+            statement += '(' + data.year +  ',' + data.value +  ',' + data.sex + ',' + data.country + ',' + data.region + ',' + indicator + ')';
         }
+
+        statement += ";";
+        conn.query(statement,
+            function(err, rows, fields) {
+                    if (err) {
+                        console.log('Error during query insert');
+                        console.log(err);
+                        res.send(err);
+                    }})
+
 
         res.json(output);
         res.end();
