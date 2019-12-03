@@ -1,0 +1,153 @@
+<html>
+<head>
+    <title>WHO Data Mapper</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.bundle.min.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.3/d3.min.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/topojson/1.6.9/topojson.min.js"></script>
+	<script src="/datamaps/dist/datamaps.world.min.js"></script>
+
+	<link rel = "stylesheet" type="text/css" href="stylesheet.css">
+</head>
+<body>
+	<!-- Container of the top bar holding the header and the search button-->
+	<div id='topbar'>
+		<p class='h1'>WHO Data Scrape</p>
+		<!--Bootstrap search container-->
+		<form id='search' class="form-inline md-form mr-auto mb-4">
+			<input id='countrySearch' class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
+			<button class="btn aqua-gradient btn-rounded btn-sm my-0" type="submit">Search</button>
+		</form>
+		<hr>
+	</div>
+	<!--Container holding the map container and the information container-->
+	<div id = "mapAndInfo">
+		<div id="mapContainer"></div>
+		<div id="infoContainer"><p class = 'h2'>Information</p><hr><p id= "countryInfo"></p></div>
+	</div>
+	<script>
+		//Container that the
+		var mapContainer = $("#mapContainer")[0];
+		//Variable for the information json
+		var infoJson;
+		//Variable for the countryCodes
+		var countryToCode;
+		//Variable for the most recently searched country. Used to keep track of which country need's its color turned back to normal
+		var lastCountrySearched;
+
+		//Map object that is what the entire D3 map revolves around. Takes in a single JSON object with various fields that tell the map how to act
+		var map = new Datamap({
+			//Element that the map is rendered in
+	        element: document.getElementById('mapContainer'),
+	        //The type of map, this is the most common map type, but not the default
+	        projection: 'mercator',
+	        //Responsive set as true so that the map rerenders when the window is resized. Must be paired with map.resize in a resize event
+	        responsive: true,
+	        //Aspect Ratio is 50% because the height is approximately 50% of the width
+	        aspectRatio: 0.50,
+	        //Fill Colors for the different types of fillKeys
+	        fills: {
+	            HIGH: '#48BA55',
+	            LOW: '#123456',
+	            MEDIUM: 'orange',
+	            UNKNOWN: 'rgb(0,0,0)',
+	            defaultFill: '#8FD694'
+	        },
+	        //A JSON object that holds the values that the countries are assigned. Initially set as null so that the json file can be asynchronously retrieved and then the map is rerendered.
+	        data: {},
+	        //popupTemplate holds a function that tells what to happen when a country is hovered over. It returns a string to be added as innerHTML
+	        geographyConfig: {
+	            popupTemplate: function(geo, data) {
+	                return ['<div class="hoverinfo"><strong>', geo.properties.name,
+	                        '</strong></div>'].join('');
+	            }
+	        },
+	        //Once the map is done loading, this function is called. This function is adding a click event to all coutries on the map as well as flipping the color
+	        done: function(datamap) {
+	            datamap.svg.selectAll('.datamaps-subunit').on('click', function(geography) {
+	            	writeInfo(geography);
+	            	if (lastCountrySearched) {
+	            		x = map.svg.selectAll('path').filter(function(d) {
+		        			return d.id == lastCountrySearched;
+		        		});
+		        		id = x[0][0].__data__.id;
+		        		let fill;
+		        		if (map.options.data[id]) {
+	    					fill = map.options.fills[map.options.data[id].fillKey];
+	    				} else {
+	    					fill = map.options.fills['defaultFill'];
+	    				}
+	    				x.style('fill', fill);
+	    				lastCountrySearched = null;
+	            	}
+
+	            });
+	        }
+	    });
+
+		//Async loads the tempJSON file
+		$.getJSON( "tempJSON.json", function( json ) {
+			infoJson = json;
+    		map.updateChoropleth(json);
+		});
+
+		//Async loads the countryToCode JSON file
+		$.getJSON( "countryToCode.json", function( json ) {
+			countryToCode = json;
+		});
+
+		//Listens for windows resize event and calls map.resize() to rerender the map
+		$(window).on('resize', function() {
+	    	map.resize();
+	    });
+
+		//Listens for when the submit event occurs in the form
+	    $('#search').submit(function(event) {
+	    	//Preventing default so the page doesn't reload
+	    	event.preventDefault();
+	    	//Get value of the input field
+	    	let countryInput = $('#countrySearch').val();
+	    	//If the input is a valid country name execute the following
+	    	if(countryToCode[countryInput]) {
+	    		//If there was a last country searched execute the following
+	    		if (lastCountrySearched) {
+	    			//Find the map element that matches the requested id
+	        		let oldCountry = map.svg.selectAll('path').filter(function(d) {
+	        			return d.id == lastCountrySearched;
+	        		});
+	        		//get the id of the previous element
+	        		id = oldCountry[0][0].__data__.id;
+	        		//If there is a fillkey set, set the fill color to the value of the fillkey, if not set it to the color of the default fill
+	        		let fill;
+	        		if (map.options.data[id]) {
+    					fill = map.options.fills[map.options.data[id].fillKey];
+    				} else {
+    					fill = map.options.fills['defaultFill'];
+    				}
+    				oldCountry.style('fill', fill);
+	    		}
+
+	    		//set the lastCountrySearched
+	    		lastCountrySearched = countryToCode[countryInput];
+	    		let geoConfig = map.options.geographyConfig;
+
+	    		//Write the data of the new country to the info panel
+	        	let newCountry = map.svg.selectAll('path').filter(function(d) {
+	        		return d.id == countryToCode[countryInput];
+	        	}).style('fill', geoConfig.highlightFillColor);
+	        	writeInfo(newCountry[0][0].__data__);
+	    	}
+	    });
+	    //Function to write the info to the info panel. It takes a geography object, which is a type of D3 json object
+	    function writeInfo(geography) {
+	    	var info = document.getElementById('countryInfo');
+        	info.innerHTML = "<p class = \'h5\'>" + geography.properties.name + "</p>";
+        	var temp = geography.id;
+        	if (infoJson[temp]) {
+        		info.innerHTML += '<br>' + infoJson[temp].numberOfThings;
+        	}
+	    }
+	</script>
+</body>
+</html>

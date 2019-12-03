@@ -4,14 +4,31 @@ let request = require("request");
 let bodyParser = require("body-parser"); // for posting form data
 let mysql = require("mysql");
 
-var app = express();
+let app = express();
+
+// Initialize Database
+let db = mysql.createConnection({
+	host: "localhost",
+	user: "nodejs",
+	password: "MyN0dePass",
+	database: "who_data"
+});
+
+// Connect when server starts
+db.connect(function(err) {
+	if (err) {
+		console.log("Error connecting to database...");
+	} else {
+		console.log("Database successfully connected!");
+	}
+});
 
 /* Endpoints */
 
 // Only use static files from static folder
 app.use(express.static("./static"));
 
-/* /get-countries
+/* /getCountries
  * Purpose: Gets list of all countries WHO tracks
  * Query parameters: None
  * Notes: Goes very slow, should only be used to update OUR database, every so often.
@@ -40,7 +57,7 @@ app.get("/getCountries", function (req, res) {
 });
 
 
-/* /get-indicator
+/* /getIndicator
  * Purpose: Gets all information on an "indicator" (disease, statistic, etc...)
  * Query parameters: indicator (Label for an indicator) EX: WHOSIS_000012
  * Notes: see notes for /get-countries
