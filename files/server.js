@@ -93,11 +93,12 @@ app.get("/getIndicator", function (req, res) {
                         console.log('Error during query insert');
                         console.log(err);
                         res.send(err);
+                    } else {
+                        res.send('good');
                     }})
 
 
-        res.json(output);
-        res.end();
+
     });
 });
 
