@@ -4,6 +4,8 @@ let request = require("request");
 let bodyParser = require("body-parser"); // for posting form data
 let mysql = require("mysql");
 
+var dbPass = require('../mysqlkey.json')
+
 var app = express();
 
 /* Endpoints */
@@ -13,10 +15,10 @@ app.use(express.static("./static"));
 
 var conn = mysql.createConnection(
   {
-	host: "localhost",
-	user: "nodejs",
-	password: "MyN0dePass",
-	database: "who_data",
+  host  : dbPass.host,
+  user  : dbPass.user,
+  password  : dbPass.password,
+  database  : dbPass.database,
   multipleStatements: true
 }
 )
@@ -36,11 +38,32 @@ app.get("/getCountries", function (req, res) {
         // Or add a seperate URL to
         // Todo: Update to modify database
         // Remember: Country may already exist in the database.
+        var statement = 'INSERT INTO Country (CountryShort,DisplayName ) VALUES'
+
         output = {};
         for (let i = 0; i < countries.length; i++) {
             let label = countries[i].label; // USA
             let display = countries[i].display; // United States of America
             output[label] = display;
+            if( i != 0 ) {
+                statement += ","
+            }
+            statement += '(' +label + ',' + display + ')';
+            conn.query(statement,
+                function(err, rows, fields) {
+                        if (err) {
+                            console.log('Error during query insert');
+                            console.log(err);
+                            res.send(err);
+                        } else {
+                            res.send('good');
+                        }})
+                      }
+            conn.query(statement,
+              function(err, rows, fields) {
+                if (err) {
+                  console.log('Error during query insert');
+                }})
         }
 
         res.json(output);
@@ -96,7 +119,6 @@ app.get("/getIndicator", function (req, res) {
                     } else {
                         res.send('good');
                     }})
-
 
 
     });
