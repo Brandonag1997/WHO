@@ -4,24 +4,22 @@ let request = require("request");
 let bodyParser = require("body-parser"); // for posting form data
 let mysql = require("mysql");
 
-var dbPass = require('../mysqlkey.json')
+let dbPass = require('../mysqlkey.json')
 
-var app = express();
+let app = express();
 
 /* Endpoints */
 
 // Only use static files from static folder
 app.use(express.static("./static"));
 
-var conn = mysql.createConnection(
-  {
+let conn = mysql.createConnection({
   host  : dbPass.host,
   user  : dbPass.user,
   password  : dbPass.password,
   database  : dbPass.database,
   multipleStatements: true
-}
-)
+});
 
 /* /get-countries
  * Purpose: Gets list of all countries WHO tracks
@@ -38,9 +36,9 @@ app.get("/getCountries", function (req, res) {
         // Or add a seperate URL to
         // Todo: Update to modify database
         // Remember: Country may already exist in the database.
-        var statement = 'INSERT INTO Country (CountryShort,DisplayName ) VALUES'
+        let statement = 'INSERT INTO Country (CountryShort,DisplayName ) VALUES';
 
-        output = {};
+        let output = {};
         for (let i = 0; i < countries.length; i++) {
             let label = countries[i].label; // USA
             let display = countries[i].display; // United States of America
@@ -59,15 +57,6 @@ app.get("/getCountries", function (req, res) {
                             res.send('good');
                         }})
                       }
-            conn.query(statement,
-              function(err, rows, fields) {
-                if (err) {
-                  console.log('Error during query insert');
-                }})
-        }
-
-        res.json(output);
-        res.end();
     });
 
 });
@@ -88,12 +77,12 @@ app.get("/getIndicator", function (req, res) {
         // Again, see /get-countries
         // It will also be MUCH easier to sort this data in a database.
         // Todo: fix to work with database
-        output = {
+        let output = {
             "label": dataPoints[0].dim.GHO, // Life expectancy ...
             "results": []
         };
 
-        var statement = 'INSERT INTO IndicatorValue (Year,Value,Sex,CountryShort,RegionShort,IndicatorShort) VALUES ';
+        let statement = 'INSERT INTO IndicatorValue (Year,Value,Sex,CountryShort,RegionShort,IndicatorShort) VALUES ';
 
         for (let i = 0; i < dataPoints.length; i++) {
             let data = {}
@@ -103,7 +92,7 @@ app.get("/getIndicator", function (req, res) {
             data.region = mysql.escape(dataPoints[i].dim.REGION); // Americas
             data.value = mysql.escape(dataPoints[i].Value);
             //output.results.push(data);
-            if( i != 0 ) {
+            if( i !== 0 ) {
                 statement += ","
             }
             statement += '(' + data.year +  ',' + data.value +  ',' + data.sex + ',' + data.country + ',' + data.region + ',' + indicator + ')';
