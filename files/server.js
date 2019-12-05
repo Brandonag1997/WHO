@@ -44,7 +44,7 @@ let putAllInDatabase = function(){
             let label = mysql.escape(countries[i].label); // USA
             let display = mysql.escape(countries[i].display); // United States of America
             if (i !== 0) {
-                statement += ","
+                statement += ",";
             }
             statement += '(' + label + ',' + display + ')';
         }
@@ -199,7 +199,7 @@ app.get("/getIndicatorValues", function (req, res) {
         let dataPoints = json.fact;
 
         let statement = 'INSERT INTO IndicatorValue (Year,Value,Sex,CountryShort,Region,IndicatorShort) VALUES ';
-// todo fix database country requirement for not null
+
         for (let i = 0; i < dataPoints.length; i++) {
             let country = mysql.escape(dataPoints[i].dim.COUNTRY); // Argentina
             let year = mysql.escape(dataPoints[i].dim.YEAR); // 2006
@@ -224,6 +224,23 @@ app.get("/getIndicatorValues", function (req, res) {
         });
 
     });
+});
+
+
+app.get("/getIndicator", function (req, res) {
+    let indicator = req.query.indicator;
+    let year = req.query.indicator;
+    let country = req.query.country;
+    let region = req.query.region;
+    if (country && region) {
+
+    } else if(country) {
+
+    } else if(region) {
+
+    } else {
+
+    }
 });
 
 /* Express Listen */
