@@ -18,13 +18,11 @@ CREATE TABLE `IndicatorValue` (
   `Year` year NOT NULL,
   `Value` float NOT NULL,
   `Sex` char,
-  `CountryShort` varchar(45),
+  `Country` varchar(200),
   `Region` varchar(45) NOT NULL,
   `IndicatorShort` varchar(45) NOT NULL
 );
 
-ALTER TABLE `IndicatorValue` ADD FOREIGN KEY (`CountryShort`) REFERENCES `Country` (`CountryShort`);
-
 ALTER TABLE `IndicatorValue` ADD FOREIGN KEY (`IndicatorShort`) REFERENCES `Indicator` (`IndicatorShort`);
 
-CREATE UNIQUE INDEX `IndicatorValue_index_0` ON `IndicatorValue` (`Year`, `Value`, `Sex`, `CountryShort`, `Region`, `IndicatorShort`);
+CREATE UNIQUE INDEX `IndicatorValue_index_0` ON `IndicatorValue` (`Year`, `Value`, `Sex`, `Country`, `Region`, `IndicatorShort`);

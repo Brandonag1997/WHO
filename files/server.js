@@ -198,7 +198,7 @@ app.get("/getIndicatorValues", function (req, res) {
         let json = JSON.parse(body);
         let dataPoints = json.fact;
 
-        let statement = 'INSERT INTO IndicatorValue (Year,Value,Sex,CountryShort,Region,IndicatorShort) VALUES ';
+        let statement = 'INSERT INTO IndicatorValue (Year,Value,Sex,Country,Region,IndicatorShort) VALUES ';
 
         for (let i = 0; i < dataPoints.length; i++) {
             let country = mysql.escape(dataPoints[i].dim.COUNTRY); // Argentina
@@ -206,7 +206,6 @@ app.get("/getIndicatorValues", function (req, res) {
             let sex = mysql.escape(dataPoints[i].dim.SEX.substring(0,1)); // Female
             let region = mysql.escape(dataPoints[i].dim.REGION); // Americas
             let value = mysql.escape(dataPoints[i].Value);
-
 
             if( i !== 0 ) statement += ",";
             statement += '(' + year +  ',' + value +  ',' + sex + ',' + country + ',' + region + ',' + mysql.escape(indicator) + ')';
@@ -216,7 +215,6 @@ app.get("/getIndicatorValues", function (req, res) {
         conn.query(statement,function(err, rows, fields) {
             if (err) {
                 console.log('Error during query insert...');
-                console.log(err);
                 res.send(err);
             } else {
                 res.send('good');
@@ -226,21 +224,45 @@ app.get("/getIndicatorValues", function (req, res) {
     });
 });
 
+app.get("/getYearsForIndicator", function(req, res){
+    let indicator = mysql.escape(req.query.indicator);
+    let statement = `SELECT DISTICT(Year) FROM IndicatorValue WHERE IndicatorShort=${indicator}`;
+
+    conn.query(statement,function(err, rows, fields) {
+        if (err) {
+            console.log('Error during query select...');
+            res.send(err);
+        } else {
+            res.json(rows);
+        }
+    });
+
+});
 
 app.get("/getIndicator", function (req, res) {
-    let indicator = req.query.indicator;
-    let year = req.query.indicator;
+    let indicator = mysql.escape(req.query.indicator);
+    let year = mysql.escape(req.query.year);
     let country = req.query.country;
     let region = req.query.region;
-    if (country && region) {
-
-    } else if(country) {
-
+    let statement = "";
+    if (country) {
+        country = mysql.escape(country);
+        statement = `SELECT * FROM IndicatorValue WHERE Country=${country} AND IndicatorShort=${indicator} AND Year=${year}`;
     } else if(region) {
-
+        region = mysql.escape(region);
+        statement = `SELECT * FROM IndicatorValue WHERE Region=${region} AND IndicatorShort=${indicator} AND Year=${year}`;
     } else {
-
+        statement = `SELECT * FROM IndicatorValue WHERE IndicatorShort=${indicator} AND Year=${year}`;
     }
+
+    conn.query(statement,function(err, rows, fields) {
+        if (err) {
+            console.log('Error during query select...');
+            res.send(err);
+        } else {
+            res.json(rows);
+        }
+    });
 });
 
 /* Express Listen */
