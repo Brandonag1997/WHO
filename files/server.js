@@ -21,7 +21,7 @@ let conn = mysql.createConnection({
   multipleStatements: true
 });
 
-/* /get-countries
+/* /getCountries
  * Purpose: Gets list of all countries WHO tracks
  * Query parameters: None
  * Notes: Goes very slow, should only be used to update OUR database, every so often.
@@ -62,7 +62,7 @@ app.get("/getCountries", function (req, res) {
 });
 
 
-/* /get-indicator
+/* /getIndicator
  * Purpose: Gets all information on an "indicator" (disease, statistic, etc...)
  * Query parameters: indicator (Label for an indicator) EX: WHOSIS_000012
  * Notes: see notes for /get-countries
