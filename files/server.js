@@ -77,6 +77,8 @@ let putAllInDatabase = function(){
               }
             }
 
+            if(category===null) { category = mysql.escape("Other"); }
+
             let url = mysql.escape(indicators[i].url);
             // comma delimited
             if (i !== 0) statement += ",";
@@ -285,7 +287,13 @@ app.get("/getCategories", function(req, res){
             console.log('Error during query select...');
             res.send(err);
         } else {
-            res.json(rows);
+            let output = [];
+
+            for(let i = 0; i < rows.length; i++) {
+                output.push(rows[i].Category);
+            }
+
+            res.json(output);
         }
     });
 });
