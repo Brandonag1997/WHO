@@ -1,6 +1,5 @@
 <html>
 <head>
-    <title>WHO Data Mapper</title>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
 	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.bundle.min.js"></script>
@@ -23,11 +22,12 @@
 	</div>
 	<!--Container holding the map container and the information container-->
 	<div id = "mapAndInfo">
+		<div id="indicatorContainer"><p class = 'h2'>Indicators</p><hr><p id= "indicatorInfo"></p></div>
 		<div id="mapContainer"></div>
 		<div id="infoContainer"><p class = 'h2'>Information</p><hr><p id= "countryInfo"></p></div>
 	</div>
 	<script>
-		//Container that the
+		//Container that the 
 		var mapContainer = $("#mapContainer")[0];
 		//Variable for the information json
 		var infoJson;
@@ -36,6 +36,8 @@
 		//Variable for the most recently searched country. Used to keep track of which country need's its color turned back to normal
 		var lastCountrySearched;
 
+		var countryList = [];
+		
 		//Map object that is what the entire D3 map revolves around. Takes in a single JSON object with various fields that tell the map how to act
 		var map = new Datamap({
 			//Element that the map is rendered in
@@ -45,14 +47,14 @@
 	        //Responsive set as true so that the map rerenders when the window is resized. Must be paired with map.resize in a resize event
 	        responsive: true,
 	        //Aspect Ratio is 50% because the height is approximately 50% of the width
-	        aspectRatio: 0.50,
+	        aspectRatio: 0.35,
 	        //Fill Colors for the different types of fillKeys
 	        fills: {
-	            HIGH: '#48BA55',
-	            LOW: '#123456',
-	            MEDIUM: 'orange',
-	            UNKNOWN: 'rgb(0,0,0)',
-	            defaultFill: '#8FD694'
+	            HIGH: '#00A8E8',
+	            MEDIUM: '007EA7',
+	            LOW: '#003459',
+	            UNKNOWN: '#890000',
+	            defaultFill: '#890000'
 	        },
 	        //A JSON object that holds the values that the countries are assigned. Initially set as null so that the json file can be asynchronously retrieved and then the map is rerendered.
 	        data: {},
@@ -87,7 +89,12 @@
 	    });
 
 		//Async loads the tempJSON file
-		$.getJSON( "tempJSON.json", function( json ) {
+		/*$.getJSON( "tempJSON.json", function( json ) {
+			infoJson = json;
+    		map.updateChoropleth(json);
+		});*/
+
+		$.getJSON( "getindicatorValues.json", function( json ) {
 			infoJson = json;
     		map.updateChoropleth(json);
 		});
@@ -95,6 +102,15 @@
 		//Async loads the countryToCode JSON file
 		$.getJSON( "countryToCode.json", function( json ) {
 			countryToCode = json;
+		});
+
+		$.getJSON( "getIndicators.json", function( json ) {
+			let y = 0;
+			for (var x in json) {
+				y++;
+				console.log(json[x]);
+			}
+			console.log(y);
 		});
 
 		//Listens for windows resize event and calls map.resize() to rerender the map
@@ -108,6 +124,59 @@
 	    	event.preventDefault();
 	    	//Get value of the input field
 	    	let countryInput = $('#countrySearch').val();
+	    	
+	    	let min = -1;
+	    	let word;
+
+	    	for (var x in countryToCode) {
+	    		dist = levDist(countryInput, x);
+
+	    		if (min > -1) {
+	    			if (dist < min) {
+	    				min = dist;
+	    				word = x;
+	    			}
+	    		} else {
+	    			min = dist;
+	    			word = x;
+	    		}
+	    	}
+	    	console.log(word);
+
+	    	//If the input is a valid country name execute the following
+	    	if(countryToCode[word]) {
+	    		//If there was a last country searched execute the following
+	    		if (lastCountrySearched) {
+	    			//Find the map element that matches the requested id
+	        		let oldCountry = map.svg.selectAll('path').filter(function(d) {
+	        			return d.id == lastCountrySearched;
+	        		});
+	        		//get the id of the previous element
+	        		id = oldCountry[0][0].__data__.id;
+	        		//If there is a fillkey set, set the fill color to the value of the fillkey, if not set it to the color of the default fill
+	        		let fill;
+	        		if (map.options.data[id]) {
+    					fill = map.options.fills[map.options.data[id].fillKey];
+    				} else {
+    					fill = map.options.fills['defaultFill'];
+    				}
+    				oldCountry.style('fill', fill);
+	    		}
+
+	    		//set the lastCountrySearched 
+	    		lastCountrySearched = countryToCode[word];
+	    		let geoConfig = map.options.geographyConfig;
+
+	    		//Write the data of the new country to the info panel
+	        	let newCountry = map.svg.selectAll('path').filter(function(d) {
+	        		return d.id == countryToCode[word];
+	        	}).style('fill', geoConfig.highlightFillColor);
+	        	writeInfo(newCountry[0][0].__data__);
+	    	}
+
+	    	/*
+	    	// Code to work with no levenstein distance
+
 	    	//If the input is a valid country name execute the following
 	    	if(countryToCode[countryInput]) {
 	    		//If there was a last country searched execute the following
@@ -128,7 +197,7 @@
     				oldCountry.style('fill', fill);
 	    		}
 
-	    		//set the lastCountrySearched
+	    		//set the lastCountrySearched 
 	    		lastCountrySearched = countryToCode[countryInput];
 	    		let geoConfig = map.options.geographyConfig;
 
@@ -137,7 +206,7 @@
 	        		return d.id == countryToCode[countryInput];
 	        	}).style('fill', geoConfig.highlightFillColor);
 	        	writeInfo(newCountry[0][0].__data__);
-	    	}
+	    	}*/
 	    });
 	    //Function to write the info to the info panel. It takes a geography object, which is a type of D3 json object
 	    function writeInfo(geography) {
@@ -145,9 +214,64 @@
         	info.innerHTML = "<p class = \'h5\'>" + geography.properties.name + "</p>";
         	var temp = geography.id;
         	if (infoJson[temp]) {
-        		info.innerHTML += '<br>' + infoJson[temp].numberOfThings;
+        		info.innerHTML += '<br>' + infoJson[temp].data.IndicatorName + '<br>' + infoJson[temp].data.Value;
+        	} else {
+        		info.innerHTML += '<br> No data available';
         	}
 	    }
+
+	    //Calculate distance between two strings
+	    //Taken from https://stackoverflow.com/questions/11919065/sort-an-array-by-the-levenshtein-distance-with-best-performance-in-javascript/11958496 for testing
+	    function levDist(s, t) {
+		    var d = []; //2d matrix
+
+		    // Step 1
+		    var n = s.length;
+		    var m = t.length;
+
+		    if (n == 0) return m;
+		    if (m == 0) return n;
+
+		    //Create an array of arrays in javascript (a descending loop is quicker)
+		    for (var i = n; i >= 0; i--) d[i] = [];
+
+		    // Step 2
+		    for (var i = n; i >= 0; i--) d[i][0] = i;
+		    for (var j = m; j >= 0; j--) d[0][j] = j;
+
+		    // Step 3
+		    for (var i = 1; i <= n; i++) {
+		        var s_i = s.charAt(i - 1);
+
+		        // Step 4
+		        for (var j = 1; j <= m; j++) {
+
+		            //Check the jagged ld total so far
+		            if (i == j && d[i][j] > 4) return n;
+
+		            var t_j = t.charAt(j - 1);
+		            var cost = (s_i == t_j) ? 0 : 1; // Step 5
+
+		            //Calculate the minimum
+		            var mi = d[i - 1][j] + 1;
+		            var b = d[i][j - 1] + 1;
+		            var c = d[i - 1][j - 1] + cost;
+
+		            if (b < mi) mi = b;
+		            if (c < mi) mi = c;
+
+		            d[i][j] = mi; // Step 6
+
+		            //Damerau transposition
+		            if (i > 1 && j > 1 && s_i == t.charAt(j - 2) && s.charAt(i - 2) == t_j) {
+		                d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + cost);
+		            }
+		        }
+		    }
+
+		    // Step 7
+		    return d[n][m];
+		}
 	</script>
 </body>
 </html>
