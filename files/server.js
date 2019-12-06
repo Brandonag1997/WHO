@@ -64,20 +64,29 @@ let putAllInDatabase = function(){
         let json = JSON.parse(body);
         let indicators = json.dimension[0].code;
 
-        let statement = 'INSERT IGNORE INTO Indicator (IndicatorShort, IndicatorName ) VALUES';
+        let statement = 'INSERT IGNORE INTO Indicator (IndicatorShort, IndicatorName,  Category, URL) VALUES';
 
         for (let i = 0; i < indicators.length; i++) {
             let label = mysql.escape(indicators[i].label); // USA
             let display = mysql.escape(indicators[i].display); // United States of America
+            //let test = indicators[i].attr;
+            var category = null
+            for (let i = 0; i < indicators[i].attr.length; i++) {
+              if (indicators[i].attr[i].category == "CATEGORY"){
+                category = mysql.escape(indicators[i].attr[i].value);
+              }
+            }
 
+            let url = mysql.escape(indicators[i].url);
             // comma delimited
             if (i !== 0) statement += ",";
-            statement += '(' + label + ',' + display + ')';
+            statement += '(' + label + ',' + display + ',' + category + ',' + url + ')';
         }
 
         conn.query(statement, function (err, rows, fields) {
             if (err) {
                 console.log('Error during inserting indicators...');
+                console.log(err.sqlMessage);
             } else {
                 console.log('Indicators updated!');
             }
