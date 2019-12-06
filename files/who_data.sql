@@ -9,8 +9,8 @@ CREATE TABLE `Indicator` (
 );
 
 CREATE TABLE `Country` (
-  `CountryShort` varchar(45) PRIMARY KEY NOT NULL,
-  `DisplayName` varchar(200) NOT NULL
+  `DisplayName` varchar(200) PRIMARY KEY NOT NULL,
+  `CountryShort` varchar(45) NOT NULL
 );
 
 CREATE TABLE `IndicatorValue` (
@@ -24,5 +24,6 @@ CREATE TABLE `IndicatorValue` (
 );
 
 ALTER TABLE `IndicatorValue` ADD FOREIGN KEY (`IndicatorShort`) REFERENCES `Indicator` (`IndicatorShort`);
+ALTER TABLE `IndicatorValue` ADD FOREIGN KEY (`Country`) REFERENCES `Country` (`DisplayName`);
 
 CREATE UNIQUE INDEX `IndicatorValue_index_0` ON `IndicatorValue` (`Year`, `Value`, `Sex`, `Country`, `Region`, `IndicatorShort`);
