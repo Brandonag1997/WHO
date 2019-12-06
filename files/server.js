@@ -12,7 +12,7 @@ let conn = mysql.createConnection({
     host: dbPass.host,
     user: dbPass.user,
     password: dbPass.password,
-    database: dbPass.database,
+    database: dbPass.database, // use who_data.sql to create database
     multipleStatements: true
 });
 
@@ -71,9 +71,9 @@ let putAllInDatabase = function(){
             let display = mysql.escape(indicators[i].display); // United States of America
             //let test = indicators[i].attr;
             var category = null
-            for (let i = 0; i < indicators[i].attr.length; i++) {
-              if (indicators[i].attr[i].category == "CATEGORY"){
-                category = mysql.escape(indicators[i].attr[i].value);
+            for (let j = 0; j < indicators[i].attr.length; j++) {
+              if (indicators[i].attr[j].category === "CATEGORY"){
+                category = mysql.escape(indicators[i].attr[j].value);
               }
             }
 
@@ -159,8 +159,13 @@ app.get("/getIndicators", function (req, res) {
 app.get("/getIndicatorValues", function (req, res) {
     let indicator = req.query.indicator;
 
+    // year not required
+    let year = req.query.year;
+    let yearStatement = "";
+    if (year) yearStatement= `WHERE Year=${year}`;
+
     // if not in database
-    let statement = `SELECT * FROM IndicatorValue AS i INNER JOIN Country AS c ON i.Country = c.DisplayName WHERE IndicatorShort=${mysql.escape(indicator)} ORDER BY Value;`;
+    let statement = `SELECT * FROM IndicatorValue AS i INNER JOIN Country AS c ON i.Country = c.DisplayName INNER JOIN Indicator AS i2 ON i.IndicatorShort = i2.IndicatorShort ${yearStatement} ORDER BY Value;`;
 
     conn.query(statement,function(err, rows, fields) {
         if (err) {
@@ -172,11 +177,23 @@ app.get("/getIndicatorValues", function (req, res) {
                 let max = rows[rows.length-1];
                 let output = {};
 
+                let range = (max.Value - min.Value)/3;
 
+                for(let i = 0; i < rows.length; i++) {
+                    let fillKey;
+                    if(rows[i].Value < range) {
+                        fillKey = "LOW";
+                    } else if (rows[i].Value < 2*range){
+                        fillKey = "LOW";
+                    } else {
+                        fillKey = "HIGH";
+                    }
 
-                res.json(min);
+                    output[rows[i].CountryShort] = {"fillKey":fillKey, "data": rows[i]};
+                }
 
-                // return exists
+                res.json(output);
+
             } else {
 
                 let URL = "http://apps.who.int/gho/athena/api/GHO/" + indicator + "?format=json&profile=simple";
@@ -257,6 +274,34 @@ app.get("/getRegionsForIndicator", function(req, res){
         }
     });
 
+});
+
+
+app.get("/getCategories", function(req, res){
+    let statement = `SELECT DISTINCT(Category) FROM Indicator;`;
+
+    conn.query(statement,function(err, rows, fields) {
+        if (err) {
+            console.log('Error during query select...');
+            res.send(err);
+        } else {
+            res.json(rows);
+        }
+    });
+});
+
+app.get("/getIndicatorsForCategory", function(req, res){
+    let category = mysql.escape(req.query.category);
+    let statement = `SELECT * FROM Indicator WHERE Category=${category};`;
+
+    conn.query(statement,function(err, rows, fields) {
+        if (err) {
+            console.log('Error during query select...');
+            res.send(err);
+        } else {
+            res.json(rows);
+        }
+    });
 });
 
 
