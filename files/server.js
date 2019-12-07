@@ -162,20 +162,20 @@ app.get("/getIndicatorValues", function (req, res) {
     let indicator = req.query.indicator;
 
     // year not required
-    let year = req.query.year;
+    let qyear = req.query.year;
     let yearStatement = "";
-    if (year) yearStatement= `WHERE Year=${year}`;
+    if (qyear) yearStatement= `AND Year=${qyear}`;
 
     // if not in database
-    let statement = `SELECT * FROM IndicatorValue AS i INNER JOIN Country AS c ON i.Country = c.DisplayName INNER JOIN Indicator AS i2 ON i.IndicatorShort = i2.IndicatorShort ${yearStatement} ORDER BY Value;`;
-
+    let statement = `SELECT * FROM IndicatorValue AS i LEFT JOIN Country AS c ON i.Country = c.DisplayName INNER JOIN Indicator AS i2 ON i.IndicatorShort = i2.IndicatorShort WHERE i.IndicatorShort=${mysql.escape(indicator)} ${yearStatement} ORDER BY Value;`;
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query insert...');
             res.send(err);
         } else {
-            if(year) {
-                if (rows.length >= 1) {
+            if (rows.length >= 1) {
+
+                if(qyear) {
                     let min = rows[0];
                     let max = rows[rows.length - 1];
                     let output = {};
@@ -196,41 +196,81 @@ app.get("/getIndicatorValues", function (req, res) {
                     }
 
                     res.json(output);
-
                 } else {
-
-                    let URL = "http://apps.who.int/gho/athena/api/GHO/" + indicator + "?format=json&profile=simple";
-                    request.get(URL, function (error, response, body) {
-                        let json = JSON.parse(body);
-                        let dataPoints = json.fact;
-
-                        let statement = 'INSERT IGNORE INTO IndicatorValue (Year,Value,Sex,Country,Region,IndicatorShort) VALUES ';
-
-                        for (let i = 0; i < dataPoints.length; i++) {
-                            let country = mysql.escape(dataPoints[i].dim.COUNTRY); // Argentina
-                            let year = mysql.escape(dataPoints[i].dim.YEAR); // 2006
-                            let sex = mysql.escape(dataPoints[i].dim.SEX.substring(0, 1)); // Female
-                            let region = mysql.escape(dataPoints[i].dim.REGION); // Americas
-                            let value = mysql.escape(dataPoints[i].Value);
-
-                            if (i !== 0) statement += ",";
-                            statement += '(' + year + ',' + value + ',' + sex + ',' + country + ',' + region + ',' + mysql.escape(indicator) + ')';
-                        }
-
-                        statement += ";";
-                        conn.query(statement, function (err, rows, fields) {
-                            if (err) {
-                                console.log('Error during query insert...');
-                                res.send(err);
-                            } else {
-                                res.send('good');
-                            }
-                        });
-
-                    });
+                    res.json(rows);
                 }
+
             } else {
-                res.json(rows);
+
+                let URL = "http://apps.who.int/gho/athena/api/GHO/" + indicator + "?format=json&profile=simple";
+                request.get(URL, function (error, response, body) {
+                    let json = JSON.parse(body);
+                    let dataPoints = json.fact;
+
+                    let statement = 'INSERT IGNORE INTO IndicatorValue (Year,Value,Sex,Country,Region,IndicatorShort) VALUES ';
+
+                    for (let i = 0; i < dataPoints.length; i++) {
+                        let country = mysql.escape(dataPoints[i].dim.COUNTRY); // Argentina
+                        let year = mysql.escape(dataPoints[i].dim.YEAR); // 2006
+                        let sex = dataPoints[i].dim.SEX; // Female
+                        if(sex) {
+                            sex = mysql.escape(sex.substring(0, 1));
+                        } else {
+                            sex = mysql.escape("B");
+                        }
+                        let region = mysql.escape(dataPoints[i].dim.REGION); // Americas
+                        let value = mysql.escape(dataPoints[i].Value);
+
+                        if (i !== 0) statement += ",";
+                        statement += '(' + year + ',' + value + ',' + sex + ',' + country + ',' + region + ',' + mysql.escape(indicator) + ')';
+                    }
+
+                    statement += ";";
+                    conn.query(statement, function (err, rows2, fields) {
+                        if (err) {
+                            console.log('Error during query insert...');
+                            res.send(err);
+                        } else {
+                            let statement = `SELECT * FROM IndicatorValue AS i LEFT JOIN Country AS c ON i.Country = c.DisplayName INNER JOIN Indicator AS i2 ON i.IndicatorShort = i2.IndicatorShort WHERE i.IndicatorShort=${mysql.escape(indicator)} ${yearStatement} ORDER BY Value;`;
+                            conn.query(statement,function(err, rows3, fields) {
+                                if (err) {
+                                    console.log('Error during query insert...');
+                                    res.send(err);
+                                } else {
+                                    if (qyear) {
+                                        let min = rows3[0];
+                                        let max = rows3[rows.length - 1];
+                                        let output = {};
+
+                                        let range = (max.Value - min.Value) / 3;
+
+                                        for (let i = 0; i < rows3.length; i++) {
+                                            let fillKey;
+                                            if (rows3[i].Value < range) {
+                                                fillKey = "LOW";
+                                            } else if (rows3[i].Value < 2 * range) {
+                                                fillKey = "LOW";
+                                            } else {
+                                                fillKey = "HIGH";
+                                            }
+
+                                            output[rows3[i].CountryShort] = {
+                                                "fillKey": fillKey,
+                                                "data": rows[i]
+                                            };
+                                        }
+
+                                        res.json(output);
+
+                                    } else {
+                                        res.json(rows3);
+                                    }
+                                }
+                            });
+                        }
+                    });
+
+                });
             }
         }
     });
@@ -245,7 +285,13 @@ app.get("/getYearsForIndicator", function(req, res){
             console.log('Error during query select...');
             res.send(err);
         } else {
-            res.json(rows);
+            let output = [];
+
+            for(let i = 0; i < rows.length; i++) {
+                output.push(rows[i].Year);
+            }
+
+            res.json(output);
         }
     });
 

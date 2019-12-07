@@ -166,21 +166,31 @@
 		}
 
 		function getYears(indicator) {
-
-			$.getJSON("getIndicatorValues?indicator=" + indicator, function(message) {
-				alert(JSON.stringify(message));
+		    console.log("getIndicatorValues?indicator=" + indicator);
+			$.getJSON("getIndicatorValues?indicator=" + indicator, function(indicatorValues) {
+			    console.log(indicatorValues);
 				$.getJSON("getYearsForIndicator?indicator=" + indicator, function (json) {
+				    console.log(json);
 					var indicatorInfo = $("#yearInfo")[0];
 					indicatorInfo.innerHTML = "";
 					let x = ""
 					for (let key in json) {
-						x += "<button type=\"button\" class=\"list-group-item list-group-item-action\" onclick=\"map('" + json[key] + "')\">" + json[key] + "</button>";
+						x += "<button type=\"button\" class=\"list-group-item list-group-item-action\" onclick=\"getMap('" + indicator + "','" + json[key] + "')\">" + json[key] + "</button>";
 					}
 					indicatorInfo.innerHTML += x;
 					$("#years").fadeIn();
 				});
 			});
 		}
+
+		function getMap(indicator,year) {
+			$.getJSON("getIndicatorValues?indicator=" + indicator + "&year=" + year , function(json) {
+			    console.log("getIndicatorValues?indicator=" + indicator + "&year=" + year );
+			    console.log(json);
+                map.updateChoropleth(json);
+            });
+
+        }
 
 		//Listens for windows resize event and calls map.resize() to rerender the map
 		$(window).on('resize', function() {
