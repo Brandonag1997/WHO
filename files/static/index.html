@@ -44,6 +44,18 @@
 					</div>
 				</div>
 			</div>
+
+
+			<div id="years" style="display:none;">
+				<p class = 'h2'>Available Years</p>
+				<hr>
+				<div class="scrollbar scrollbar-primary">
+					<div class="force-overflow">
+						<div class="list-group" id="yearInfo">
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 		<div id="mapContainer"></div>
 		<div id="infoContainer"><p class = 'h2'>Information</p><hr><p id= "countryInfo"></p></div>
@@ -145,7 +157,7 @@
 				indicatorInfo.innerHTML = "";
 				let x = ""
 				for (let key in json) {
-					x += "<button type=\"button\" class=\"list-group-item list-group-item-action\" onclick=\"getYears('"+ json[key] + "')\">" + json[key].split('(')[0] + "</button>";
+					x += "<button type=\"button\" class=\"list-group-item list-group-item-action\" onclick=\"getYears('"+ key + "')\">" + json[key].split('(')[0] + "</button>";
 				}
 				indicatorInfo.innerHTML += x;
 				$("#years").fadeOut();
@@ -155,6 +167,19 @@
 
 		function getYears(indicator) {
 
+			$.getJSON("getIndicatorValues?indicator=" + indicator, function(message) {
+				alert(JSON.stringify(message));
+				$.getJSON("getYearsForIndicator?indicator=" + indicator, function (json) {
+					var indicatorInfo = $("#yearInfo")[0];
+					indicatorInfo.innerHTML = "";
+					let x = ""
+					for (let key in json) {
+						x += "<button type=\"button\" class=\"list-group-item list-group-item-action\" onclick=\"map('" + json[key] + "')\">" + json[key] + "</button>";
+					}
+					indicatorInfo.innerHTML += x;
+					$("#years").fadeIn();
+				});
+			});
 		}
 
 		//Listens for windows resize event and calls map.resize() to rerender the map
