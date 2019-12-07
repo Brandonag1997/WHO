@@ -22,7 +22,26 @@
 	</div>
 	<!--Container holding the map container and the information container-->
 	<div id = "mapAndInfo">
-		<div id="indicatorContainer"><p class = 'h2'>Indicators</p><hr><p id= "indicatorInfo"></p></div>
+		<div id="indicatorContainer">
+
+			<p class = 'h2'>Categories</p>
+			<hr>
+			<div class="scrollbar scrollbar-primary">
+  				<div class="force-overflow">
+  					<div class="list-group" id="categoryInfo">
+					</div>
+  				</div>
+			</div>
+
+			<p class = 'h2'>Indicators</p>
+			<hr>
+			<div class="scrollbar scrollbar-primary">
+  				<div class="force-overflow">
+  					<div class="list-group" id="indicatorInfo">
+					</div>
+  				</div>
+			</div>
+		</div>
 		<div id="mapContainer"></div>
 		<div id="infoContainer"><p class = 'h2'>Information</p><hr><p id= "countryInfo"></p></div>
 	</div>
@@ -104,13 +123,26 @@
 			countryToCode = json;
 		});
 
-		$.getJSON( "getIndicators.json", function( json ) {
-			let y = 0;
-			for (var x in json) {
-				y++;
-				console.log(json[x]);
+		//Preferably alphabetically
+		$.getJSON( "getCategories.json", function( json ) {
+			var indicatorInfo = $("#categoryInfo")[0];
+			indicatorInfo.innerHTML = "";
+			let x = ""
+			for (let key in json) {
+				x += "<button type=\"button\" class=\"list-group-item list-group-item-action\">" + json[key] + "</button>";
 			}
-			console.log(y);
+			indicatorInfo.innerHTML += x;
+		});
+
+		//Preferably alphabetically
+		$.getJSON( "getIndicators.json", function( json ) {
+			var indicatorInfo = $("#indicatorInfo")[0];
+			indicatorInfo.innerHTML = "";
+			let x = ""
+			for (let key in json) {
+				x += "<button type=\"button\" class=\"list-group-item list-group-item-action\">" + json[key].split('(')[0] + "</button>";
+			}
+			indicatorInfo.innerHTML += x;
 		});
 
 		//Listens for windows resize event and calls map.resize() to rerender the map
@@ -166,7 +198,6 @@
 	    		//set the lastCountrySearched 
 	    		lastCountrySearched = countryToCode[word];
 	    		let geoConfig = map.options.geographyConfig;
-
 	    		//Write the data of the new country to the info panel
 	        	let newCountry = map.svg.selectAll('path').filter(function(d) {
 	        		return d.id == countryToCode[word];
@@ -221,7 +252,7 @@
 	    }
 
 	    //Calculate distance between two strings
-	    //Taken from https://stackoverflow.com/questions/11919065/sort-an-array-by-the-levenshtein-distance-with-best-performance-in-javascript/11958496 for testing
+	    //Code originates from https://stackoverflow.com/questions/11919065/sort-an-array-by-the-levenshtein-distance-with-best-performance-in-javascript/11958496
 	    function levDist(s, t) {
 		    var d = []; //2d matrix
 
