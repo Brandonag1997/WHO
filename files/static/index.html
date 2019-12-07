@@ -24,22 +24,25 @@
 	<div id = "mapAndInfo">
 		<div id="indicatorContainer">
 
-			<p class = 'h2'>Categories</p>
-			<hr>
-			<div class="scrollbar scrollbar-primary">
-  				<div class="force-overflow">
-  					<div class="list-group" id="categoryInfo">
+			<div id="categories">
+				<p class = 'h2'>Categories</p>
+				<hr>
+				<div class="scrollbar scrollbar-primary">
+					<div class="force-overflow">
+						<div class="list-group" id="categoryInfo">
+						</div>
 					</div>
-  				</div>
+				</div>
 			</div>
-
-			<p class = 'h2'>Indicators</p>
-			<hr>
-			<div class="scrollbar scrollbar-primary">
-  				<div class="force-overflow">
-  					<div class="list-group" id="indicatorInfo">
+			<div id="indicators" style="display:none;">
+				<p class = 'h2'>Indicators</p>
+				<hr>
+				<div class="scrollbar scrollbar-primary">
+					<div class="force-overflow">
+						<div class="list-group" id="indicatorInfo">
+						</div>
 					</div>
-  				</div>
+				</div>
 			</div>
 		</div>
 		<div id="mapContainer"></div>
@@ -124,26 +127,35 @@
 		});
 
 		//Preferably alphabetically
-		$.getJSON( "getCategories.json", function( json ) {
+		$.getJSON( "/getCategories", function( json ) {
 			var indicatorInfo = $("#categoryInfo")[0];
 			indicatorInfo.innerHTML = "";
-			let x = ""
+			let x = "";
 			for (let key in json) {
-				x += "<button type=\"button\" class=\"list-group-item list-group-item-action\">" + json[key] + "</button>";
+				x += "<button type=\"button\" class=\"list-group-item list-group-item-action\" onclick=\"getIndicator('"+ json[key] + "')\">" + json[key] + "</button>";
 			}
+
 			indicatorInfo.innerHTML += x;
 		});
 
-		//Preferably alphabetically
-		$.getJSON( "getIndicators.json", function( json ) {
-			var indicatorInfo = $("#indicatorInfo")[0];
-			indicatorInfo.innerHTML = "";
-			let x = ""
-			for (let key in json) {
-				x += "<button type=\"button\" class=\"list-group-item list-group-item-action\">" + json[key].split('(')[0] + "</button>";
-			}
-			indicatorInfo.innerHTML += x;
-		});
+		function getIndicator(key) {
+			//Preferably alphabetically
+			$.getJSON("getIndicatorsForCategory?category=" + key, function (json) {
+				var indicatorInfo = $("#indicatorInfo")[0];
+				indicatorInfo.innerHTML = "";
+				let x = ""
+				for (let key in json) {
+					x += "<button type=\"button\" class=\"list-group-item list-group-item-action\" onclick=\"getYears('"+ json[key] + "')\">" + json[key].split('(')[0] + "</button>";
+				}
+				indicatorInfo.innerHTML += x;
+				$("#years").fadeOut();
+				$("#indicators").fadeIn();
+			});
+		}
+
+		function getYears(indicator) {
+
+		}
 
 		//Listens for windows resize event and calls map.resize() to rerender the map
 		$(window).on('resize', function() {

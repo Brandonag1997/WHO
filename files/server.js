@@ -307,7 +307,11 @@ app.get("/getIndicatorsForCategory", function(req, res){
             console.log('Error during query select...');
             res.send(err);
         } else {
-            res.json(rows);
+            let output = {};
+            for(let i = 0; i < rows.length; i++) {
+                output[rows[i].IndicatorShort] = rows[i].IndicatorName;
+            }
+            res.json(output);
         }
     });
 });
