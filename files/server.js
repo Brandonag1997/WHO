@@ -280,7 +280,7 @@ app.get("/getRegionsForIndicator", function(req, res){
 
 
 app.get("/getCategories", function(req, res){
-    let statement = `SELECT DISTINCT(Category) FROM Indicator  ORDER BY IndicatorName;`;
+    let statement = `SELECT DISTINCT(Category) FROM Indicator  ORDER BY Category;`;
 
     conn.query(statement,function(err, rows, fields) {
         if (err) {
