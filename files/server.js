@@ -137,7 +137,7 @@ app.get("/getCountryDisplays", function (req, res) {
  * Notes: Contacts OUR database
  */
 app.get("/getIndicators", function (req, res) {
-    let statement = "SELECT * FROM Indicator";
+    let statement = "SELECT * FROM Indicator ORDER BY IndicatorName";
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query processing...');
@@ -280,7 +280,7 @@ app.get("/getRegionsForIndicator", function(req, res){
 
 
 app.get("/getCategories", function(req, res){
-    let statement = `SELECT DISTINCT(Category) FROM Indicator;`;
+    let statement = `SELECT DISTINCT(Category) FROM Indicator  ORDER BY IndicatorName;`;
 
     conn.query(statement,function(err, rows, fields) {
         if (err) {
@@ -300,7 +300,7 @@ app.get("/getCategories", function(req, res){
 
 app.get("/getIndicatorsForCategory", function(req, res){
     let category = mysql.escape(req.query.category);
-    let statement = `SELECT * FROM Indicator WHERE Category=${category};`;
+    let statement = `SELECT * FROM Indicator WHERE Category=${category} ORDER BY IndicatorName;`;
 
     conn.query(statement,function(err, rows, fields) {
         if (err) {
