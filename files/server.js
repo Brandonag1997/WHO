@@ -5,6 +5,8 @@ let bodyParser = require("body-parser"); // for posting form data
 let mysql = require("mysql");
 let app = express();
 
+let schedule = require('node-schedule');
+
 let dbPass = require('../mysqlkey.json')
 
 // Initialize Database
@@ -316,10 +318,61 @@ app.get("/getIndicatorValues", function (req, res) {
     });
 });
 
+function updateIndicators() {
+  let statement = 'SELECT I.IndicatorName, I.IndicatorShort FROM Indicator as I INNER JOIN (SELECT DISTINCT(IndicatorShort) from IndicatorValue) AS IV ON I.IndicatorShort = IV.IndicatorShort;'
+  conn.query(statement,function(err, rows, fields) {
+      if (err) {
+          console.log('Error during query select...' + err.sqlMessage);
+      } else {
+
+          for(let i = 0; i < rows.length; i++) {
+              let indicator=rows[i].IndicatorShort;
+              let indicatorName=rows[i].IndicatorName;
+              let URL = "http://apps.who.int/gho/athena/api/GHO/" + indicator + "?format=json&profile=simple";
+              request.get(URL, function (error, response, body) {
+                  let json = JSON.parse(body);
+                  let dataPoints = json.fact;
+
+                  let insertstatement = 'INSERT IGNORE INTO IndicatorValue (Year,Value,Sex,Country,Region,IndicatorShort) VALUES ';
+
+                  for (let i = 0; i < dataPoints.length; i++) {
+                      let country = mysql.escape(dataPoints[i].dim.COUNTRY); // Argentina
+                      let year = mysql.escape(dataPoints[i].dim.YEAR); // 2006
+                      let sex = dataPoints[i].dim.SEX; // Female
+                      if (sex) {
+                          sex = mysql.escape(sex.substring(0, 1));
+                      } else {
+                          sex = mysql.escape("B");
+                      }
+                      let region = mysql.escape(dataPoints[i].dim.REGION); // Americas
+                      let value = mysql.escape(dataPoints[i].Value);
+
+                      if (i !== 0) insertstatement += ",";
+                      insertstatement += '(' + year + ',' + value + ',' + sex + ',' + country + ',' + region + ',' + mysql.escape(indicator) + ')';
+                  }
+
+                  insertstatement += "ON DUPLICATE KEY UPDATE Year=VALUES(Year),Value=VALUES(Value),Sex=VALUES(Sex),Country=VALUES(Country),Region=VALUES(Region),IndicatorShort=VALUES(IndicatorShort);";
+
+                  conn.query(insertstatement, function(err, rows2, fields){
+                    if (err) {
+                        console.log('Error updating ' + indicatorName + err.sqlMessage);
+                    }
+                    else {
+                        console.log('Updated data for ' + indicatorName);
+                    }
+                  })
+                  });
+          }
+      }
+  });
+};
+
+
 /**
  * /getYearsForIndicator
  * Get all of the years for an indicator
  */
+
 app.get("/getYearsForIndicator", function(req, res){
     let indicator = mysql.escape(req.query.indicator);
     let statement = `SELECT DISTINCT(Year) FROM IndicatorValue WHERE IndicatorShort=${indicator} ORDER BY Year DESC;`;
@@ -357,6 +410,23 @@ app.get("/getCountriesForIndicator", function(req, res){
     });
 
 });
+
+
+app.get("/getRegionsForIndicator", function(req, res){
+    let indicator = mysql.escape(req.query.indicator);
+    let statement = `SELECT DISTINCT(Region) FROM IndicatorValue WHERE IndicatorShort=${indicator};`;
+
+    conn.query(statement,function(err, rows, fields) {
+        if (err) {
+            console.log('Error during query select...');
+            res.json({"failed":"getRegionsForIndicator"}); res.status(500);
+        } else {
+            res.json(rows);
+        }
+    });
+
+});
+
 
 app.get("/getCategories", function(req, res){
     let statement = `SELECT DISTINCT(Category) FROM Indicator  ORDER BY Category;`;
@@ -439,3 +509,8 @@ app.listen(8080, function (){
 });
 
 putAllInDatabase();
+
+var j = schedule.scheduleJob('0 0 * * *', function(){
+  console.log('Running nightly indicator update');
+  updateIndicators();
+});
