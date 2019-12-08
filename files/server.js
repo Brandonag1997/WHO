@@ -116,6 +116,7 @@ app.get("/getCountries", function (req, res) {
     });
 });
 
+// Reverse display
 app.get("/getCountryDisplays", function (req, res) {
     let statement = "SELECT * FROM Country";
     conn.query(statement,function(err, rows, fields) {
@@ -240,8 +241,12 @@ app.get("/getIndicatorValues", function (req, res) {
                     statement += ";";
                     conn.query(statement, function (err, rows2, fields) {
                         if (err) {
-                            console.log('Error during query insert...' + err.sqlMessage);
-                            res.json({"failed":"getIndicatorValues2"}); res.status(500);
+                            console.log('Known Issue, WHO Data incorrect... Error during query insert...' + err.sqlMessage);
+                            conn.query(`DELETE FROM Indicator WHERE IndicatorShort=${mysql.escape(indicator)};`,
+                            function (err, rows, fields) {
+                                res.json({"failed":"getIndicatorValues2"});
+                                res.status(500);
+                            });
                         } else {
 
                             // IT would be better to put this in a function rather than having it much larger,
@@ -311,6 +316,10 @@ app.get("/getIndicatorValues", function (req, res) {
     });
 });
 
+/**
+ * /getYearsForIndicator
+ * Get all of the years for an indicator
+ */
 app.get("/getYearsForIndicator", function(req, res){
     let indicator = mysql.escape(req.query.indicator);
     let statement = `SELECT DISTINCT(Year) FROM IndicatorValue WHERE IndicatorShort=${indicator} ORDER BY Year DESC;`;
@@ -332,10 +341,7 @@ app.get("/getYearsForIndicator", function(req, res){
             res.json(output);
         }
     });
-
 });
-
-
 
 app.get("/getCountriesForIndicator", function(req, res){
     let indicator = mysql.escape(req.query.indicator);
@@ -351,23 +357,6 @@ app.get("/getCountriesForIndicator", function(req, res){
     });
 
 });
-
-
-app.get("/getRegionsForIndicator", function(req, res){
-    let indicator = mysql.escape(req.query.indicator);
-    let statement = `SELECT DISTINCT(Region) FROM IndicatorValue WHERE IndicatorShort=${indicator};`;
-
-    conn.query(statement,function(err, rows, fields) {
-        if (err) {
-            console.log('Error during query select...');
-            res.json({"failed":"getRegionsForIndicator"}); res.status(500);
-        } else {
-            res.json(rows);
-        }
-    });
-
-});
-
 
 app.get("/getCategories", function(req, res){
     let statement = `SELECT DISTINCT(Category) FROM Indicator  ORDER BY Category;`;
@@ -390,6 +379,10 @@ app.get("/getCategories", function(req, res){
     });
 });
 
+/**
+ * /getIndicatorsForCategory
+ * get indicators for a category
+ */
 app.get("/getIndicatorsForCategory", function(req, res){
     let category = mysql.escape(req.query.category);
     let statement = `SELECT * FROM Indicator WHERE Category=${category} ORDER BY IndicatorName;`;
@@ -408,6 +401,10 @@ app.get("/getIndicatorsForCategory", function(req, res){
     });
 });
 
+/**
+ * /getIndicator
+ * get data for one indicator
+ */
 
 app.get("/getIndicator", function (req, res) {
     let indicator = mysql.escape(req.query.indicator);

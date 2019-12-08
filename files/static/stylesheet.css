@@ -27,6 +27,10 @@ div.content {
     display: none;
 }
 
+#searchContainer.left {
+    left: 0;
+}
+
 #searchContainer {
     position: fixed;
     bottom: 0;
@@ -47,7 +51,14 @@ div.content {
     display: none;
 }
 
-@media screen and (max-width: 700px) {
+@media only screen and (max-width: 1200px) {
+
+  #infoContainer {
+      position: static;
+  }
+}
+
+@media only screen and (max-width: 700px) {
   .sidebar {
     width: 100%;
     height: auto;
@@ -58,6 +69,10 @@ div.content {
   }
   #searchContainer, #error {
       left: 0;
+  }
+
+  #searchContainer {
+      position: static;
   }
 
   #infoContainer {
