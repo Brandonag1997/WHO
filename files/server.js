@@ -5,6 +5,8 @@ let bodyParser = require("body-parser"); // for posting form data
 let mysql = require("mysql");
 let app = express();
 
+let schedule = require('node-schedule');
+
 let dbPass = require('../mysqlkey.json')
 
 // Initialize Database
@@ -490,4 +492,8 @@ app.listen(8080, function (){
 });
 
 putAllInDatabase();
-updateIndicators();
+
+var j = schedule.scheduleJob('0 0 * * *', function(){
+  console.log('Running nightly indicator update');
+  updateIndicators();
+});
