@@ -1,13 +1,12 @@
 /* Dependencies */
 let express = require("express");
 let request = require("request");
-let bodyParser = require("body-parser"); // for posting form data
 let mysql = require("mysql");
 let app = express();
 
 let schedule = require('node-schedule');
 
-let dbPass = require('../mysqlkey.json')
+let dbPass = require('../mysqlkey.json');
 
 // Initialize Database
 let conn = mysql.createConnection({
