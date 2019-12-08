@@ -303,6 +303,54 @@ app.get("/getIndicatorValues", function (req, res) {
     });
 });
 
+function updateIndicators() {
+  let statement = 'SELECT DISTINCT(IndicatorShort) from IndicatorValue;'
+  conn.query(statement,function(err, rows, fields) {
+      if (err) {
+          console.log('Error during query select...' + err.sqlMessage);
+      } else {
+
+          for(let i = 0; i < rows.length; i++) {
+              let indicator=rows[i].IndicatorShort;
+              let URL = "http://apps.who.int/gho/athena/api/GHO/" + indicator + "?format=json&profile=simple";
+              request.get(URL, function (error, response, body) {
+                  let json = JSON.parse(body);
+                  let dataPoints = json.fact;
+
+                  let insertstatement = 'INSERT IGNORE INTO IndicatorValue (Year,Value,Sex,Country,Region,IndicatorShort) VALUES ';
+
+                  for (let i = 0; i < dataPoints.length; i++) {
+                      let country = mysql.escape(dataPoints[i].dim.COUNTRY); // Argentina
+                      let year = mysql.escape(dataPoints[i].dim.YEAR); // 2006
+                      let sex = dataPoints[i].dim.SEX; // Female
+                      if (sex) {
+                          sex = mysql.escape(sex.substring(0, 1));
+                      } else {
+                          sex = mysql.escape("B");
+                      }
+                      let region = mysql.escape(dataPoints[i].dim.REGION); // Americas
+                      let value = mysql.escape(dataPoints[i].Value);
+
+                      if (i !== 0) insertstatement += ",";
+                      insertstatement += '(' + year + ',' + value + ',' + sex + ',' + country + ',' + region + ',' + mysql.escape(indicator) + ')';
+                  }
+
+                  insertstatement += "ON DUPLICATE KEY UPDATE Year=VALUES(Year),Value=VALUES(Value),Sex=VALUES(Sex),Country=VALUES(Country),Region=VALUES(Region),IndicatorShort=VALUES(IndicatorShort);";
+
+                  conn.query(insertstatement, function(err, rows2, fields){
+                    if (err) {
+                        console.log('Error updating ' + indicator + err.sqlMessage);
+                    }
+                    else {
+                        console.log('Updated data for ' + indicator);
+                    }
+                  })
+                  });
+          }
+      }
+  });
+};
+
 app.get("/getYearsForIndicator", function(req, res){
     let indicator = mysql.escape(req.query.indicator);
     let statement = `SELECT DISTINCT(Year) FROM IndicatorValue WHERE IndicatorShort=${indicator} ORDER BY Year;`;
@@ -434,3 +482,4 @@ app.listen(8080, function (){
 });
 
 putAllInDatabase();
+updateIndicators();
