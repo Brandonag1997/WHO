@@ -246,7 +246,7 @@ app.get("/getIndicatorValues", function (req, res) {
 
                             // IT would be better to put this in a function rather than having it much larger,
                             // to avoid duplicate code, but we are on a deadline...
-                            let statement = `SELECT * FROM IndicatorValue AS i LEFT JOIN Country AS c ON i.Country = c.DisplayName INNER JOIN Indicator AS i2 ON i.IndicatorShort = i2.IndicatorShort WHERE i.IndicatorShort=${mysql.escape(indicator)} ${yearStatement} ORDER BY Value;`;
+                            let statement = `SELECT * FROM IndicatorValue AS i LEFT JOIN Country AS c ON i.Country = c.DisplayName INNER JOIN Indicator AS i2 ON i.IndicatorShort = i2.IndicatorShort WHERE i.IndicatorShort=${mysql.escape(indicator)} ${yearStatement} ;`;
                             conn.query(statement,function(err, rows3, fields) {
                                 if (err) {
                                     console.log('Error during query select...'  + err.sqlMessage);
