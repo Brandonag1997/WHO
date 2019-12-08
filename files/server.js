@@ -105,7 +105,7 @@ app.get("/getCountries", function (req, res) {
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query processing...');
-            res.json("failed"); res.status(500);
+            res.json({"failed":"getCountries"}); res.status(500);
         } else {
             let output = {};
             for(let i = 0; i < rows.length; i++) {
@@ -121,7 +121,7 @@ app.get("/getCountryDisplays", function (req, res) {
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query processing...');
-            res.json("failed"); res.status(500);
+            res.json({"failed":"getCountryDisplays"}); res.status(500);
         } else {
             let output = {};
             for(let i = 0; i < rows.length; i++) {
@@ -141,7 +141,7 @@ app.get("/getIndicators", function (req, res) {
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query processing...');
-            res.json("failed"); res.status(500);
+            res.json({"failed":"getIndicators"}); res.status(500);
         } else {
             let output = {};
             for(let i = 0; i < rows.length; i++) {
@@ -172,7 +172,7 @@ app.get("/getIndicatorValues", function (req, res) {
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query insert...'  + err.sqlMessage);
-            res.json(err);
+            res.json({"failed":"getIndicatorValues1"});
         } else {
             if (rows.length >= 1) {
                 if(rows[0].Country !== null) {
@@ -241,56 +241,64 @@ app.get("/getIndicatorValues", function (req, res) {
                     conn.query(statement, function (err, rows2, fields) {
                         if (err) {
                             console.log('Error during query insert...' + err.sqlMessage);
-                            res.json("failed"); res.status(500);
+                            res.json({"failed":"getIndicatorValues2"}); res.status(500);
                         } else {
 
                             // IT would be better to put this in a function rather than having it much larger,
                             // to avoid duplicate code, but we are on a deadline...
-                            let statement = `SELECT * FROM IndicatorValue AS i LEFT JOIN Country AS c ON i.Country = c.DisplayName INNER JOIN Indicator AS i2 ON i.IndicatorShort = i2.IndicatorShort WHERE i.IndicatorShort=${mysql.escape(indicator)} ${yearStatement} ;`;
+                            let statement = `SELECT * FROM IndicatorValue AS i LEFT JOIN Country AS c ON i.Country = c.DisplayName INNER JOIN Indicator AS i2 ON i.IndicatorShort = i2.IndicatorShort WHERE i.IndicatorShort=${mysql.escape(indicator)} ${yearStatement}`;
                             conn.query(statement,function(err, rows3, fields) {
                                 if (err) {
                                     console.log('Error during query select...'  + err.sqlMessage);
-                                    res.json("failed"); res.status(500);
+                                    res.json({"failed":"getIndicatorValues3"}); res.status(500);
                                 } else {
-                                    if(rows[0].Country !== null) {
-                                        if (qyear) {
-                                            let min = rows3[0];
-                                            let max = rows3[rows.length - 1];
-                                            let output = {};
+                                    if(rows3.length > 0) {
+                                        if (rows3[0].Country !== null) {
+                                            if (qyear) {
+                                                let min = rows3[0];
+                                                let max = rows3[rows.length - 1];
+                                                let output = {};
 
-                                            let range = (max.Value - min.Value) / 3;
+                                                let range = (max.Value - min.Value) / 3;
 
-                                            for (let i = 0; i < rows3.length; i++) {
-                                                let fillKey;
-                                                if (rows3[i].Value < range) {
-                                                    fillKey = "LOW";
-                                                } else if (rows3[i].Value < 2 * range) {
-                                                    fillKey = "MEDIUM";
-                                                } else {
-                                                    fillKey = "HIGH";
+                                                for (let i = 0; i < rows3.length; i++) {
+                                                    let fillKey;
+                                                    if (rows3[i].Value < range) {
+                                                        fillKey = "LOW";
+                                                    } else if (rows3[i].Value < 2 * range) {
+                                                        fillKey = "MEDIUM";
+                                                    } else {
+                                                        fillKey = "HIGH";
+                                                    }
+
+                                                    output[rows3[i].CountryShort] = {
+                                                        "fillKey": fillKey,
+                                                        "data": rows[i]
+                                                    };
                                                 }
 
-                                                output[rows3[i].CountryShort] = {
-                                                    "fillKey": fillKey,
-                                                    "data": rows[i]
-                                                };
-                                            }
+                                                res.json(output);
 
-                                            res.json(output);
+                                            } else {
+                                                // indicators for all years
+                                                let output = {"years": [], "values": []};
+                                                for (let i = 0; i < rows.length; i++) {
+                                                    output.years.push(rows[i].Year);
+                                                    output.values.push(rows[i].Year);
+                                                }
+
+                                                res.json(output);
+                                            }
 
                                         } else {
-                                            // indicators for all years
-                                            let output = {"years": [], "values": []};
-                                            for(let i = 0; i < rows.length; i++) {
-                                                output.years.push(rows[i].Year);
-                                                output.values.push(rows[i].Year);
-                                            }
-
-                                            res.json(output);
+                                            conn.query(`DELETE FROM Indicator WHERE IndicatorShort=${mysql.escape(indicator)};`,
+                                                function (err, rows, fields) {
+                                                    res.json({"failed":"getIndicatorValues4"});
+                                                    res.status(500);
+                                                });
                                         }
-
                                     } else {
-                                        conn.query(`DELETE FROM Indicator WHERE IndicatorShort=${mysql.escape(indicator)};`);
+                                        res.json({"failed":"getIndicatorValues5 "+rows.length}); res.status(500);
                                     }
                                 }
                             });
@@ -305,14 +313,14 @@ app.get("/getIndicatorValues", function (req, res) {
 
 app.get("/getYearsForIndicator", function(req, res){
     let indicator = mysql.escape(req.query.indicator);
-    let statement = `SELECT DISTINCT(Year) FROM IndicatorValue WHERE IndicatorShort=${indicator} ORDER BY Year;`;
+    let statement = `SELECT DISTINCT(Year) FROM IndicatorValue WHERE IndicatorShort=${indicator} ORDER BY Year DESC;`;
 
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query select...' + err.sqlMessage);
 
             conn.query(`DELETE FROM Indicator WHERE IndicatorShort=${mysql.escape(indicator)};`,function(err, rows, fields) {
-                res.json("failed"); res.status(500);
+                res.json({"failed":"getYearsForIndicator"}); res.status(500);
             });
         } else {
             let output = [];
@@ -336,7 +344,7 @@ app.get("/getCountriesForIndicator", function(req, res){
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query select...');
-            res.json("failed"); res.status(500);
+            res.json({"failed":"getCountriesForIndicator"}); res.status(500);
         } else {
             res.json(rows);
         }
@@ -352,7 +360,7 @@ app.get("/getRegionsForIndicator", function(req, res){
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query select...');
-            res.json("failed"); res.status(500);
+            res.json({"failed":"getRegionsForIndicator"}); res.status(500);
         } else {
             res.json(rows);
         }
@@ -367,7 +375,7 @@ app.get("/getCategories", function(req, res){
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query select...');
-            res.json("failed"); res.status(500);
+            res.json({"failed":"getCategories"}); res.status(500);
         } else {
             let output = [];
 
@@ -389,7 +397,7 @@ app.get("/getIndicatorsForCategory", function(req, res){
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query select...');
-            res.json("failed"); res.status(500);
+            res.json({"failed":"getIndicatorsForCategory"}); res.status(500);
         } else {
             let output = {};
             for(let i = 0; i < rows.length; i++) {
@@ -420,7 +428,7 @@ app.get("/getIndicator", function (req, res) {
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query select...');
-            res.json("failed"); res.status(500);
+            res.json({"failed":"getIndicator"}); res.status(500);
         } else {
             res.json(rows);
         }
