@@ -9,5 +9,6 @@ A web app to display World Health Organization Data
 
 ### Database setup
 - MySQL Database
-- Set up mysqlkey.json in this folder.
+- Set up mysqlkey.json in this folder with the following formatting:
+    - { "host": "localhost", "user": "username", "password": "", "database": "who_data" }
 - use who_data.sql to create database
