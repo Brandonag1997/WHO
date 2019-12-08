@@ -175,38 +175,41 @@ app.get("/getIndicatorValues", function (req, res) {
             res.json(err);
         } else {
             if (rows.length >= 1) {
+                if(rows[0].Country !== null) {
+                    if (qyear) {
+                        let min = rows[0];
+                        let max = rows[rows.length - 1];
+                        let output = {};
 
-                if(qyear) {
-                    let min = rows[0];
-                    let max = rows[rows.length - 1];
-                    let output = {};
+                        let range = (max.Value - min.Value) / 3;
 
-                    let range = (max.Value - min.Value) / 3;
+                        for (let i = 0; i < rows.length; i++) {
+                            let fillKey;
+                            if (rows[i].Value < range) {
+                                fillKey = "LOW";
+                            } else if (rows[i].Value < 2 * range) {
+                                fillKey = "LOW";
+                            } else {
+                                fillKey = "HIGH";
+                            }
 
-                    for (let i = 0; i < rows.length; i++) {
-                        let fillKey;
-                        if (rows[i].Value < range) {
-                            fillKey = "LOW";
-                        } else if (rows[i].Value < 2 * range) {
-                            fillKey = "LOW";
-                        } else {
-                            fillKey = "HIGH";
+                            output[rows[i].CountryShort] = {"fillKey": fillKey, "data": rows[i]};
                         }
 
-                        output[rows[i].CountryShort] = {"fillKey": fillKey, "data": rows[i]};
-                    }
+                        res.json(output);
+                    } else {
 
-                    res.json(output);
+                        // indicators for all
+                        let output = {"years": [], "values": []};
+                        for (let i = 0; i < rows.length; i++) {
+                            output.years.push(rows[i].Year);
+                            output.values.push(rows[i].Year);
+                        }
+
+                        res.json(output);
+                    }
                 } else {
-
-                    // indicators for all
-                    let output = {"years": [], "values": []};
-                    for(let i = 0; i < rows.length; i++) {
-                        output.years.push(rows[i].Year);
-                        output.values.push(rows[i].Year);
-                    }
-
-                    res.json(output);
+                    conn.query(`DELETE FROM Indicator WHERE IndicatorShort=${mysql.escape(indicator)};`)
                 }
 
             } else {
@@ -246,43 +249,48 @@ app.get("/getIndicatorValues", function (req, res) {
                             let statement = `SELECT * FROM IndicatorValue AS i LEFT JOIN Country AS c ON i.Country = c.DisplayName INNER JOIN Indicator AS i2 ON i.IndicatorShort = i2.IndicatorShort WHERE i.IndicatorShort=${mysql.escape(indicator)} ${yearStatement} ORDER BY Value;`;
                             conn.query(statement,function(err, rows3, fields) {
                                 if (err) {
-                                    console.log('Error during query insert...'  + err.sqlMessage);
+                                    console.log('Error during query select...'  + err.sqlMessage);
                                     res.json(err.sqlMessage); res.status(500);
                                 } else {
-                                    if (qyear) {
-                                        let min = rows3[0];
-                                        let max = rows3[rows.length - 1];
-                                        let output = {};
+                                    if(rows[0].Country !== null) {
+                                        if (qyear) {
+                                            let min = rows3[0];
+                                            let max = rows3[rows.length - 1];
+                                            let output = {};
 
-                                        let range = (max.Value - min.Value) / 3;
+                                            let range = (max.Value - min.Value) / 3;
 
-                                        for (let i = 0; i < rows3.length; i++) {
-                                            let fillKey;
-                                            if (rows3[i].Value < range) {
-                                                fillKey = "LOW";
-                                            } else if (rows3[i].Value < 2 * range) {
-                                                fillKey = "LOW";
-                                            } else {
-                                                fillKey = "HIGH";
+                                            for (let i = 0; i < rows3.length; i++) {
+                                                let fillKey;
+                                                if (rows3[i].Value < range) {
+                                                    fillKey = "LOW";
+                                                } else if (rows3[i].Value < 2 * range) {
+                                                    fillKey = "LOW";
+                                                } else {
+                                                    fillKey = "HIGH";
+                                                }
+
+                                                output[rows3[i].CountryShort] = {
+                                                    "fillKey": fillKey,
+                                                    "data": rows[i]
+                                                };
                                             }
 
-                                            output[rows3[i].CountryShort] = {
-                                                "fillKey": fillKey,
-                                                "data": rows[i]
-                                            };
-                                        }
+                                            res.json(output);
 
-                                        res.json(output);
+                                        } else {
+                                            // indicators for all years
+                                            let output = {"years": [], "values": []};
+                                            for(let i = 0; i < rows.length; i++) {
+                                                output.years.push(rows[i].Year);
+                                                output.values.push(rows[i].Year);
+                                            }
+
+                                            res.json(output);
+                                        }
 
                                     } else {
-                                        // indicators for all years
-                                        let output = {"years": [], "values": []};
-                                        for(let i = 0; i < rows.length; i++) {
-                                            output.years.push(rows[i].Year);
-                                            output.values.push(rows[i].Year);
-                                        }
-
-                                        res.json(output);
+                                        conn.query(`DELETE FROM Indicator WHERE IndicatorShort=${mysql.escape(indicator)};`);
                                     }
                                 }
                             });
@@ -303,6 +311,10 @@ app.get("/getYearsForIndicator", function(req, res){
         if (err) {
             console.log('Error during query select...' + err.sqlMessage);
             res.json(err.sqlMessage); res.status(500);
+            conn.query("DELETE",function(err, rows, fields) {
+
+
+            });
         } else {
             let output = [];
 

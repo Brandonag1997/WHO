@@ -6,59 +6,80 @@
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.3/d3.min.js"></script>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/topojson/1.6.9/topojson.min.js"></script>
 	<script src="/datamaps/dist/datamaps.world.min.js"></script>
-
-	<link rel = "stylesheet" type="text/css" href="stylesheet.css">
+	<link href="/pinchzoomer/css/pinchzoomer.min.css" rel="stylesheet">
+	<script src="/pinchzoomer/js/jquery-1.11.3.min.js" type="text/javascript"></script>
+	<script src="/pinchzoomer/js/hammer.min.js" type="text/javascript"></script>
+	<script src="/pinchzoomer/js/TweenMax.min.js" type="text/javascript"></script>
+	<script src="/pinchzoomer/js/jquery.pinchzoomer.min.js" type="text/javascript"></script>
+	<link rel="stylesheet" type="text/css" href="stylesheet.css">
 </head>
-<body>
-	<!-- Container of the top bar holding the header and the search button-->
-	<div id='topbar'>
-		<p class='h1'>WHO Data Scrape</p>
-		<!--Bootstrap search container-->
-		<form id='search' class="form-inline md-form mr-auto mb-4">
-			<input id='countrySearch' class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
-			<button class="btn aqua-gradient btn-rounded btn-sm my-0" type="submit">Search</button>
-		</form>
-		<hr>
+<div>
+	<div class="sidebar">
+		<!-- page sidebar -->
+		<div class="h1">who<em>mapper</em></div>
+
+			<div id="indicatorContainer">
+				<div id="categories">
+					<p class = 'h2'>Categories</p>
+					<hr>
+					<div class="scrollbar scrollbar-primary">
+						<div class="force-overflow">
+							<div class="list-group" id="categoryInfo">
+							</div>
+						</div>
+					</div>
+				</div>
+				<div id="indicators" style="display:none;">
+					<p class='h2'>Indicators</p>
+					<hr>
+					<div class="scrollbar scrollbar-primary">
+						<div class="force-overflow">
+							<div class="list-group" id="indicatorInfo">
+							</div>
+						</div>
+					</div>
+				</div>
+				<div id="years" style="display:none;">
+					<p class='h2'>Available Years</p>
+					<hr>
+					<div class="scrollbar scrollbar-primary">
+						<div class="force-overflow">
+							<div class="list-group" id="yearInfo">
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
 	</div>
-	<!--Container holding the map container and the information container-->
-	<div id = "mapAndInfo">
-		<div id="indicatorContainer">
+	<div class="content">
+		<!-- d3 displays and information -->
 
-			<div id="categories">
-				<p class = 'h2'>Categories</p>
-				<hr>
-				<div class="scrollbar scrollbar-primary">
-					<div class="force-overflow">
-						<div class="list-group" id="categoryInfo">
-						</div>
-					</div>
+		<!-- Container of the top bar holding the header and the search button-->
+		<!--Container holding the map container and the information container-->
+		<div id = "mapAndInfo">
+			<div id="bottomContainer">
+
+				<div id="infoContainer">
+					<div id="close">X</div>
+					<p id="countryInfo"></p>
 				</div>
-			</div>
-			<div id="indicators" style="display:none;">
-				<p class = 'h2'>Indicators</p>
-				<hr>
-				<div class="scrollbar scrollbar-primary">
-					<div class="force-overflow">
-						<div class="list-group" id="indicatorInfo">
-						</div>
-					</div>
+
+				<div id="searchContainer">
+					<form id="search" class="form-inline md-form mr-auto mb-4">
+						<input id='countrySearch' class="form-control mr-sm-2" type="text" placeholder="Enter a country..." aria-label="Search">
+						<button class="btn aqua-gradient btn-rounded btn-sm my-0" type="submit">Search</button>
+					</form>
 				</div>
+
 			</div>
 
-
-			<div id="years" style="display:none;">
-				<p class = 'h2'>Available Years</p>
-				<hr>
-				<div class="scrollbar scrollbar-primary">
-					<div class="force-overflow">
-						<div class="list-group" id="yearInfo">
-						</div>
-					</div>
+			<div id="zoomHolder">
+				<div id="zoomField" data-elem="pinchzoomer" data-options="minZoom:.5; maxZoom:8">
+					<div id="mapContainer"></div>
 				</div>
 			</div>
 		</div>
-		<div id="mapContainer"></div>
-		<div id="infoContainer"><p class = 'h2'>Information</p><hr><p id= "countryInfo"></p></div>
 	</div>
 	<script>
 		//Container that the 
@@ -86,10 +107,10 @@
 	        //Fill Colors for the different types of fillKeys
 	        fills: {
 	            HIGH: '#00A8E8',
-	            MEDIUM: '007EA7',
+	            MEDIUM: '#007EA7',
 	            LOW: '#003459',
-	            UNKNOWN: '#890000',
-	            defaultFill: '#890000'
+	            UNKNOWN: '#888888',
+	            defaultFill: '#888888'
 	        },
 	        //A JSON object that holds the values that the countries are assigned. Initially set as null so that the json file can be asynchronously retrieved and then the map is rerendered.
 	        data: {},
@@ -129,13 +150,13 @@
     		map.updateChoropleth(json);
 		});*/
 
-		// $.getJSON( "getindicatorValues.json", function( json ) {
-		// 	infoJson = json;
-    	// 	map.updateChoropleth(json);
-		// });
+		$.getJSON( "getindicatorValues.json", function( json ) {
+			infoJson = json;
+    		map.updateChoropleth(json);
+		});
 
 		//Async loads the countryToCode JSON file
-		$.getJSON( "countryToCode.json", function( json ) {
+		$.getJSON( "/getCountryDisplays", function( json ) {
 			countryToCode = json;
 		});
 
@@ -308,12 +329,15 @@
 	    	var info = document.getElementById('countryInfo');
         	info.innerHTML = "<p class = \'h5\'>" + geography.properties.name + "</p>";
         	var temp = geography.id;
-        	console.log(infoJson[temp]);
-        	if (infoJson[temp]) {
-        		info.innerHTML += '<br>' + infoJson[temp].data.IndicatorName + '<br>' + infoJson[temp].data.Value;
-        	} else {
-        		info.innerHTML += '<br> No data available';
-        	}
+        	if(infoJson) {
+				if (infoJson[temp]) {
+					info.innerHTML += '<br>' + infoJson[temp].data.IndicatorName + '<br>' + infoJson[temp].data.Value;
+				} else {
+					info.innerHTML += '<br> No data available';
+				}
+			}
+
+        	$("#infoContainer").fadeIn();
 	    }
 
 	    //Calculate distance between two strings
@@ -368,6 +392,15 @@
 		    // Step 7
 		    return d[n][m];
 		}
+	$(function() {
+		$(".fullscreenToggle").click(function () {
+			map.resize();
+		});
+
+		$("#close").click(function(){
+			$("#infoContainer").fadeOut();
+		});
+	});
 	</script>
 </body>
 </html>

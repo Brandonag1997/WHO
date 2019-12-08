@@ -1,25 +1,87 @@
-body {
-	text-align: center;
+.h1 {
+    padding: 20px;
+}
+.sidebar {
+  margin: 0;
+  padding: 0;
+  width: 300px;
+  background-color: #f1f1f1;
+  position: fixed;
+  height: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+div.content {
+  margin-left: 300px;
+  padding: 1px 16px;
+}
+
+@media screen and (max-width: 700px) {
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+  }
+  div.content {
+	  margin: 0;
+  }
 }
 
 #mapContainer {
 	text-align: left;
 	position: relative;
-	width: 50%;
-	height: 0px;
+	width: 100%;
+	height: 0;
+	padding-top: 35%;
 	display:inline-block;
 }
 
+#mapContainer svg {
+	margin-top: -35%;
+}
+
+#close {
+    float: right;
+    width: 15px;
+    height: 15px;
+    line-height: 15px;
+    text-align: center;
+}
+
 #infoContainer {
-	width: 24%;
-	min-width: 240px;
-	display: inline-block;
-	vertical-align: top;
+    background: #eeeeee;
+    padding: 15px;
+    border: 1px solid #aaaaaa;
+    display: none;
+}
+
+#bottomContainer {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000000000;
+}
+
+#searchContainer {
+    float: right;
+    padding: 15px;
+
+}
+
+#zoomHolder {
+    position: relative;
+    height: 100%;
+    width: 100%;
+}
+
+#zoomField {
+    height: 100%;
+    width: 100%;
 }
 
 #indicatorContainer {
-	width: 24%;
-	min-width: 250px;
+	padding:20px;
 	display: inline-block;
 	vertical-align: top;
 }
@@ -31,19 +93,6 @@ body {
 #mapAndInfo {
 	width: 100%;
 	margin: 0px auto;
-}
-
-#search > input {
-	width: 15%;
-	margin-left: auto;
-}
-
-#search > button {
-	margin-right: auto;
-	width: 5%;
-}
-
-#topbar {
 }
 
 .list-group > button {

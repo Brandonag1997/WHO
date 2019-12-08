@@ -23,7 +23,7 @@ CREATE TABLE `IndicatorValue` (
   `IndicatorShort` varchar(45) NOT NULL
 );
 
-ALTER TABLE `IndicatorValue` ADD FOREIGN KEY (`IndicatorShort`) REFERENCES `Indicator` (`IndicatorShort`);
+ALTER TABLE `IndicatorValue` ADD FOREIGN KEY (`IndicatorShort`) REFERENCES `Indicator` (`IndicatorShort`) ON DELETE CASCADE;
 ALTER TABLE `IndicatorValue` ADD FOREIGN KEY (`Country`) REFERENCES `Country` (`DisplayName`);
 
 CREATE UNIQUE INDEX `IndicatorValue_index_0` ON `IndicatorValue` (`Year`, `Value`, `Sex`, `Country`, `Region`, `IndicatorShort`);
