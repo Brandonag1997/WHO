@@ -17,6 +17,36 @@ div.content {
   padding: 1px 16px;
 }
 
+
+#error {
+    position: fixed;
+    top: 0;
+    left: 300px;
+    right: 70px;
+    margin: 20px;
+    z-index: 1000000000;
+}
+
+#searchContainer {
+    position: fixed;
+    bottom: 0;
+    z-index: 1000000000;
+    left: 300px;
+    padding: 20px;
+}
+#infoContainer {
+    position: fixed;
+    bottom: 0;
+    z-index: 1000000000;
+    left: 600px;
+    right: 0;
+    margin: 20px;
+    background: #eeeeee;
+    padding: 15px;
+    border: 1px solid #aaaaaa;
+    display: none;
+}
+
 @media screen and (max-width: 700px) {
   .sidebar {
     width: 100%;
@@ -25,6 +55,13 @@ div.content {
   }
   div.content {
 	  margin: 0;
+  }
+  #searchContainer, #error {
+      left: 0;
+  }
+
+  #infoContainer {
+      left: 300px;
   }
 }
 
@@ -49,25 +86,6 @@ div.content {
     text-align: center;
 }
 
-#infoContainer {
-    background: #eeeeee;
-    padding: 15px;
-    border: 1px solid #aaaaaa;
-    display: none;
-}
-
-#bottomContainer {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1000000000;
-}
-
-#searchContainer {
-    float: right;
-    padding: 15px;
-
-}
 
 #zoomHolder {
     position: relative;
@@ -79,6 +97,7 @@ div.content {
     height: 100%;
     width: 100%;
 }
+
 
 #indicatorContainer {
 	padding:20px;

@@ -105,7 +105,7 @@ app.get("/getCountries", function (req, res) {
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query processing...');
-            res.json(err.sqlMessage); res.status(500);
+            res.json("failed"); res.status(500);
         } else {
             let output = {};
             for(let i = 0; i < rows.length; i++) {
@@ -121,7 +121,7 @@ app.get("/getCountryDisplays", function (req, res) {
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query processing...');
-            res.json(err.sqlMessage); res.status(500);
+            res.json("failed"); res.status(500);
         } else {
             let output = {};
             for(let i = 0; i < rows.length; i++) {
@@ -141,7 +141,7 @@ app.get("/getIndicators", function (req, res) {
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query processing...');
-            res.json(err.sqlMessage); res.status(500);
+            res.json("failed"); res.status(500);
         } else {
             let output = {};
             for(let i = 0; i < rows.length; i++) {
@@ -188,7 +188,7 @@ app.get("/getIndicatorValues", function (req, res) {
                             if (rows[i].Value < range) {
                                 fillKey = "LOW";
                             } else if (rows[i].Value < 2 * range) {
-                                fillKey = "LOW";
+                                fillKey = "MEDIUM";
                             } else {
                                 fillKey = "HIGH";
                             }
@@ -241,7 +241,7 @@ app.get("/getIndicatorValues", function (req, res) {
                     conn.query(statement, function (err, rows2, fields) {
                         if (err) {
                             console.log('Error during query insert...' + err.sqlMessage);
-                            res.json(err.sqlMessage); res.status(500);
+                            res.json("failed"); res.status(500);
                         } else {
 
                             // IT would be better to put this in a function rather than having it much larger,
@@ -250,7 +250,7 @@ app.get("/getIndicatorValues", function (req, res) {
                             conn.query(statement,function(err, rows3, fields) {
                                 if (err) {
                                     console.log('Error during query select...'  + err.sqlMessage);
-                                    res.json(err.sqlMessage); res.status(500);
+                                    res.json("failed"); res.status(500);
                                 } else {
                                     if(rows[0].Country !== null) {
                                         if (qyear) {
@@ -265,7 +265,7 @@ app.get("/getIndicatorValues", function (req, res) {
                                                 if (rows3[i].Value < range) {
                                                     fillKey = "LOW";
                                                 } else if (rows3[i].Value < 2 * range) {
-                                                    fillKey = "LOW";
+                                                    fillKey = "MEDIUM";
                                                 } else {
                                                     fillKey = "HIGH";
                                                 }
@@ -310,10 +310,9 @@ app.get("/getYearsForIndicator", function(req, res){
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query select...' + err.sqlMessage);
-            res.json(err.sqlMessage); res.status(500);
-            conn.query("DELETE",function(err, rows, fields) {
 
-
+            conn.query(`DELETE FROM Indicator WHERE IndicatorShort=${mysql.escape(indicator)};`,function(err, rows, fields) {
+                res.json("failed"); res.status(500);
             });
         } else {
             let output = [];
@@ -337,7 +336,7 @@ app.get("/getCountriesForIndicator", function(req, res){
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query select...');
-            res.json(err.sqlMessage); res.status(500);
+            res.json("failed"); res.status(500);
         } else {
             res.json(rows);
         }
@@ -353,7 +352,7 @@ app.get("/getRegionsForIndicator", function(req, res){
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query select...');
-            res.json(err.sqlMessage); res.status(500);
+            res.json("failed"); res.status(500);
         } else {
             res.json(rows);
         }
@@ -368,7 +367,7 @@ app.get("/getCategories", function(req, res){
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query select...');
-            res.json(err.sqlMessage); res.status(500);
+            res.json("failed"); res.status(500);
         } else {
             let output = [];
 
@@ -390,7 +389,7 @@ app.get("/getIndicatorsForCategory", function(req, res){
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query select...');
-            res.json(err.sqlMessage); res.status(500);
+            res.json("failed"); res.status(500);
         } else {
             let output = {};
             for(let i = 0; i < rows.length; i++) {
@@ -421,7 +420,7 @@ app.get("/getIndicator", function (req, res) {
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query select...');
-            res.json(err.sqlMessage); res.status(500);
+            res.json("failed"); res.status(500);
         } else {
             res.json(rows);
         }
