@@ -69,7 +69,8 @@
 		var countryToCode;
 		//Variable for the most recently searched country. Used to keep track of which country need's its color turned back to normal
 		var lastCountrySearched;
-
+		let indicators2ignore = [];
+		let categories2ignore = [];
 		var countryList = [];
 		
 		//Map object that is what the entire D3 map revolves around. Takes in a single JSON object with various fields that tell the map how to act
@@ -128,10 +129,10 @@
     		map.updateChoropleth(json);
 		});*/
 
-		$.getJSON( "getindicatorValues.json", function( json ) {
-			infoJson = json;
-    		map.updateChoropleth(json);
-		});
+		// $.getJSON( "getindicatorValues.json", function( json ) {
+		// 	infoJson = json;
+    	// 	map.updateChoropleth(json);
+		// });
 
 		//Async loads the countryToCode JSON file
 		$.getJSON( "countryToCode.json", function( json ) {
@@ -166,9 +167,11 @@
 		}
 
 		function getYears(indicator) {
-		    console.log("getIndicatorValues?indicator=" + indicator);
 			$.getJSON("getIndicatorValues?indicator=" + indicator, function(indicatorValues) {
 			    console.log(indicatorValues);
+			    console.log(indicatorValues[null]);
+
+
 				$.getJSON("getYearsForIndicator?indicator=" + indicator, function (json) {
 				    console.log(json);
 					var indicatorInfo = $("#yearInfo")[0];
@@ -179,6 +182,11 @@
 					}
 					indicatorInfo.innerHTML += x;
 					$("#years").fadeIn();
+
+					if(json.length == 0){
+						indicators2ignore.push(indicator);
+						console.log(indicators2ignore);
+					}
 				});
 			});
 		}
@@ -187,7 +195,16 @@
 			$.getJSON("getIndicatorValues?indicator=" + indicator + "&year=" + year , function(json) {
 			    console.log("getIndicatorValues?indicator=" + indicator + "&year=" + year );
 			    console.log(json);
-                map.updateChoropleth(json);
+			    infoJson = json;
+                map.updateChoropleth(json, {reset:true});
+
+
+					if(json[null]){
+						categories2ignore.push(json[null].data.Category);
+						indicators2ignore.push(indicator);
+						console.log(categories2ignore);
+						console.log(indicators2ignore);
+					}
             });
 
         }
@@ -291,6 +308,7 @@
 	    	var info = document.getElementById('countryInfo');
         	info.innerHTML = "<p class = \'h5\'>" + geography.properties.name + "</p>";
         	var temp = geography.id;
+        	console.log(infoJson[temp]);
         	if (infoJson[temp]) {
         		info.innerHTML += '<br>' + infoJson[temp].data.IndicatorName + '<br>' + infoJson[temp].data.Value;
         	} else {

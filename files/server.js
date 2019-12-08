@@ -69,20 +69,20 @@ let putAllInDatabase = function(){
         for (let i = 0; i < indicators.length; i++) {
             let label = mysql.escape(indicators[i].label); // USA
             let display = mysql.escape(indicators[i].display); // United States of America
-            //let test = indicators[i].attr;
-            var category = null
+
+            var category = mysql.escape("Other");
             for (let j = 0; j < indicators[i].attr.length; j++) {
               if (indicators[i].attr[j].category === "CATEGORY"){
                 category = mysql.escape(indicators[i].attr[j].value);
               }
             }
 
-            if(category===null) { category = mysql.escape("Other"); }
-
             let url = mysql.escape(indicators[i].url);
-            // comma delimited
-            if (i !== 0) statement += ",";
-            statement += '(' + label + ',' + display + ',' + category + ',' + url + ')';
+            if (indicators[i].url !== "" && indicators[i].display_sequence !== 0 && indicators[i].display_sequence !== 35) {
+                // comma delimited
+                if (i !== 0) statement += ",";
+                statement += '(' + label + ',' + display + ',' + category + ',' + url + ')';
+            }
         }
 
         conn.query(statement, function (err, rows, fields) {
@@ -105,7 +105,7 @@ app.get("/getCountries", function (req, res) {
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query processing...');
-            res.send(err);
+            res.json(err.sqlMessage); res.status(500);
         } else {
             let output = {};
             for(let i = 0; i < rows.length; i++) {
@@ -121,7 +121,7 @@ app.get("/getCountryDisplays", function (req, res) {
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query processing...');
-            res.send(err);
+            res.json(err.sqlMessage); res.status(500);
         } else {
             let output = {};
             for(let i = 0; i < rows.length; i++) {
@@ -141,7 +141,7 @@ app.get("/getIndicators", function (req, res) {
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query processing...');
-            res.send(err);
+            res.json(err.sqlMessage); res.status(500);
         } else {
             let output = {};
             for(let i = 0; i < rows.length; i++) {
@@ -164,14 +164,15 @@ app.get("/getIndicatorValues", function (req, res) {
     // year not required
     let qyear = req.query.year;
     let yearStatement = "";
-    if (qyear) yearStatement= `AND Year=${qyear}`;
+    if (qyear) yearStatement= `AND Year=${qyear} ORDER BY Value;`;
+    else yearStatement= `ORDER BY Year;`;
 
     // if not in database
-    let statement = `SELECT * FROM IndicatorValue AS i LEFT JOIN Country AS c ON i.Country = c.DisplayName INNER JOIN Indicator AS i2 ON i.IndicatorShort = i2.IndicatorShort WHERE i.IndicatorShort=${mysql.escape(indicator)} ${yearStatement} ORDER BY Value;`;
+    let statement = `SELECT * FROM IndicatorValue AS i LEFT JOIN Country AS c ON i.Country = c.DisplayName INNER JOIN Indicator AS i2 ON i.IndicatorShort = i2.IndicatorShort WHERE i.IndicatorShort=${mysql.escape(indicator)} ${yearStatement}`;
     conn.query(statement,function(err, rows, fields) {
         if (err) {
-            console.log('Error during query insert...');
-            res.send(err);
+            console.log('Error during query insert...'  + err.sqlMessage);
+            res.json(err);
         } else {
             if (rows.length >= 1) {
 
@@ -197,7 +198,15 @@ app.get("/getIndicatorValues", function (req, res) {
 
                     res.json(output);
                 } else {
-                    res.json(rows);
+
+                    // indicators for all
+                    let output = {"years": [], "values": []};
+                    for(let i = 0; i < rows.length; i++) {
+                        output.years.push(rows[i].Year);
+                        output.values.push(rows[i].Year);
+                    }
+
+                    res.json(output);
                 }
 
             } else {
@@ -213,7 +222,7 @@ app.get("/getIndicatorValues", function (req, res) {
                         let country = mysql.escape(dataPoints[i].dim.COUNTRY); // Argentina
                         let year = mysql.escape(dataPoints[i].dim.YEAR); // 2006
                         let sex = dataPoints[i].dim.SEX; // Female
-                        if(sex) {
+                        if (sex) {
                             sex = mysql.escape(sex.substring(0, 1));
                         } else {
                             sex = mysql.escape("B");
@@ -228,14 +237,17 @@ app.get("/getIndicatorValues", function (req, res) {
                     statement += ";";
                     conn.query(statement, function (err, rows2, fields) {
                         if (err) {
-                            console.log('Error during query insert...');
-                            res.send(err);
+                            console.log('Error during query insert...' + err.sqlMessage);
+                            res.json(err.sqlMessage); res.status(500);
                         } else {
+
+                            // IT would be better to put this in a function rather than having it much larger,
+                            // to avoid duplicate code, but we are on a deadline...
                             let statement = `SELECT * FROM IndicatorValue AS i LEFT JOIN Country AS c ON i.Country = c.DisplayName INNER JOIN Indicator AS i2 ON i.IndicatorShort = i2.IndicatorShort WHERE i.IndicatorShort=${mysql.escape(indicator)} ${yearStatement} ORDER BY Value;`;
                             conn.query(statement,function(err, rows3, fields) {
                                 if (err) {
-                                    console.log('Error during query insert...');
-                                    res.send(err);
+                                    console.log('Error during query insert...'  + err.sqlMessage);
+                                    res.json(err.sqlMessage); res.status(500);
                                 } else {
                                     if (qyear) {
                                         let min = rows3[0];
@@ -263,7 +275,14 @@ app.get("/getIndicatorValues", function (req, res) {
                                         res.json(output);
 
                                     } else {
-                                        res.json(rows3);
+                                        // indicators for all years
+                                        let output = {"years": [], "values": []};
+                                        for(let i = 0; i < rows.length; i++) {
+                                            output.years.push(rows[i].Year);
+                                            output.values.push(rows[i].Year);
+                                        }
+
+                                        res.json(output);
                                     }
                                 }
                             });
@@ -278,12 +297,12 @@ app.get("/getIndicatorValues", function (req, res) {
 
 app.get("/getYearsForIndicator", function(req, res){
     let indicator = mysql.escape(req.query.indicator);
-    let statement = `SELECT DISTINCT(Year) FROM IndicatorValue WHERE IndicatorShort=${indicator};`;
+    let statement = `SELECT DISTINCT(Year) FROM IndicatorValue WHERE IndicatorShort=${indicator} ORDER BY Year;`;
 
     conn.query(statement,function(err, rows, fields) {
         if (err) {
-            console.log('Error during query select...');
-            res.send(err);
+            console.log('Error during query select...' + err.sqlMessage);
+            res.json(err.sqlMessage); res.status(500);
         } else {
             let output = [];
 
@@ -297,6 +316,8 @@ app.get("/getYearsForIndicator", function(req, res){
 
 });
 
+
+
 app.get("/getCountriesForIndicator", function(req, res){
     let indicator = mysql.escape(req.query.indicator);
     let statement = `SELECT DISTINCT(Country) FROM IndicatorValue WHERE IndicatorShort=${indicator};`;
@@ -304,7 +325,7 @@ app.get("/getCountriesForIndicator", function(req, res){
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query select...');
-            res.send(err);
+            res.json(err.sqlMessage); res.status(500);
         } else {
             res.json(rows);
         }
@@ -320,7 +341,7 @@ app.get("/getRegionsForIndicator", function(req, res){
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query select...');
-            res.send(err);
+            res.json(err.sqlMessage); res.status(500);
         } else {
             res.json(rows);
         }
@@ -335,12 +356,14 @@ app.get("/getCategories", function(req, res){
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query select...');
-            res.send(err);
+            res.json(err.sqlMessage); res.status(500);
         } else {
             let output = [];
 
             for(let i = 0; i < rows.length; i++) {
-                output.push(rows[i].Category);
+                let bad_categories = ["AMR GLASS Coordination", "AMR GLASS Quality assurance", "AMR GLASS Surveillance"];
+                if (bad_categories.indexOf(rows[i].Category) === -1)
+                    output.push(rows[i].Category);
             }
 
             res.json(output);
@@ -355,7 +378,7 @@ app.get("/getIndicatorsForCategory", function(req, res){
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query select...');
-            res.send(err);
+            res.json(err.sqlMessage); res.status(500);
         } else {
             let output = {};
             for(let i = 0; i < rows.length; i++) {
@@ -386,7 +409,7 @@ app.get("/getIndicator", function (req, res) {
     conn.query(statement,function(err, rows, fields) {
         if (err) {
             console.log('Error during query select...');
-            res.send(err);
+            res.json(err.sqlMessage); res.status(500);
         } else {
             res.json(rows);
         }
