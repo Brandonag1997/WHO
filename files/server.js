@@ -314,7 +314,7 @@ app.get("/getIndicatorValues", function (req, res) {
 });
 
 function updateIndicators() {
-  let statement = 'SELECT DISTINCT(IndicatorShort) from IndicatorValue;'
+  let statement = 'SELECT I.IndicatorName, I.IndicatorShort FROM Indicator as I INNER JOIN (SELECT DISTINCT(IndicatorShort) from IndicatorValue) AS IV ON I.IndicatorShort = IV.IndicatorShort;'
   conn.query(statement,function(err, rows, fields) {
       if (err) {
           console.log('Error during query select...' + err.sqlMessage);
@@ -322,6 +322,7 @@ function updateIndicators() {
 
           for(let i = 0; i < rows.length; i++) {
               let indicator=rows[i].IndicatorShort;
+              let indicatorName=rows[i].IndicatorName;
               let URL = "http://apps.who.int/gho/athena/api/GHO/" + indicator + "?format=json&profile=simple";
               request.get(URL, function (error, response, body) {
                   let json = JSON.parse(body);
@@ -349,10 +350,10 @@ function updateIndicators() {
 
                   conn.query(insertstatement, function(err, rows2, fields){
                     if (err) {
-                        console.log('Error updating ' + indicator + err.sqlMessage);
+                        console.log('Error updating ' + indicatorName + err.sqlMessage);
                     }
                     else {
-                        console.log('Updated data for ' + indicator);
+                        console.log('Updated data for ' + indicatorName);
                     }
                   })
                   });
