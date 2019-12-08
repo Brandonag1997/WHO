@@ -8,7 +8,6 @@
   background-color: #f1f1f1;
   position: fixed;
   height: 100%;
-  height: 100%;
   overflow: auto;
 }
 
@@ -25,6 +24,7 @@ div.content {
     right: 70px;
     margin: 20px;
     z-index: 1000000000;
+    display: none;
 }
 
 #searchContainer {
@@ -84,6 +84,7 @@ div.content {
     height: 15px;
     line-height: 15px;
     text-align: center;
+    cursor: pointer;
 }
 
 
@@ -118,6 +119,30 @@ div.content {
 	text-align: left;
 }
 
+#loading {
+    background: rgba(255,255,255,0.65);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100000000000;
+}
+
+#loadingWrapper {
+    display: none;
+}
+
+.hover {
+    padding: 10px;
+    background: #eee;
+    border: 1px solid #aaa;
+    margin-bottom: 20px;
+    display: inline-block;
+}
 
 /*Scroll bar CSS*/
 .scrollbar {

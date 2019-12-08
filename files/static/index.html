@@ -1,8 +1,9 @@
 <html>
 <head>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
-	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.bundle.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.3/d3.min.js"></script>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/topojson/1.6.9/topojson.min.js"></script>
 	<script src="/datamaps/dist/datamaps.world.min.js"></script>
@@ -14,18 +15,25 @@
 	<link rel="stylesheet" type="text/css" href="stylesheet.css">
 </head>
 <body>
-	<div class="alert alert-danger alert-dismissible fade" id="error">
+	<div class="alert alert-danger alert-dismissible" id="error">
 	  <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
 	  <strong>Sorry!</strong> Data not available from WHO API.
 	</div>
-	<div class="sidebar">
+	<div id="loadingWrapper">
+		<div id="loading">
+			<div class="spinner-border text-dark" role="status">
+				<span class="sr-only">Loading...</span>
+			</div>
+		</div>
+	</div>
+	<div class="sidebar scrollbar-primary">
+
 		<!-- page sidebar -->
 		<div class="h1">who<em>mapper</em></div>
 
 			<div id="indicatorContainer">
 				<div id="categories">
 					<p class = 'h2'>Categories</p>
-					<hr>
 					<div class="scrollbar scrollbar-primary">
 						<div class="force-overflow">
 							<div class="list-group" id="categoryInfo">
@@ -35,7 +43,6 @@
 				</div>
 				<div id="indicators" style="display:none;">
 					<p class='h2'>Indicators</p>
-					<hr>
 					<div class="scrollbar scrollbar-primary">
 						<div class="force-overflow">
 							<div class="list-group" id="indicatorInfo">
@@ -45,7 +52,6 @@
 				</div>
 				<div id="years" style="display:none;">
 					<p class='h2'>Available Years</p>
-					<hr>
 					<div class="scrollbar scrollbar-primary">
 						<div class="force-overflow">
 							<div class="list-group" id="yearInfo">
@@ -65,21 +71,22 @@
 			<div id="bottomContainer">
 
 				<div id="infoContainer">
-					<div id="close">X</div>
-					<p id="countryInfo"></p>
+					<div id="close">&times;</div>
+					<div id="countryInfo"></div>
 				</div>
 
 				<div id="searchContainer">
+					<div id="countryName"></div>
 					<form id="search" class="form-inline md-form mr-auto mb-0">
 						<input id='countrySearch' class="form-control mr-sm-2" type="text" placeholder="Enter a country..." aria-label="Search">
-						<button class="btn aqua-gradient btn-rounded btn-sm my-0" type="submit">Search</button>
+						<button class="btn btn-light btn-rounded btn-sm my-0" type="submit">Search</button>
 					</form>
 				</div>
 
 			</div>
 
 			<div id="zoomHolder">
-				<div id="zoomField" data-elem="pinchzoomer" data-options="minZoom:.5; maxZoom:8">
+				<div id="zoomField" data-elem="pinchzoomer" data-options="minZoom:.7; maxZoom:8">
 					<div id="mapContainer"></div>
 				</div>
 			</div>
@@ -121,9 +128,8 @@
 	        //popupTemplate holds a function that tells what to happen when a country is hovered over. It returns a string to be added as innerHTML
 	        geographyConfig: {
 	            popupTemplate: function(geo, data) {
-	                return ['<div class="hoverinfo"><strong>', geo.properties.name,
-	                        '</strong></div>'].join('');
-	            }
+	                 return "";
+				}
 	        },
 	        //Once the map is done loading, this function is called. This function is adding a click event to all coutries on the map as well as flipping the color
 	        done: function(datamap) {
@@ -145,28 +151,44 @@
 	            	}
 
 	            });
+
+
+	            datamap.svg.selectAll('.datamaps-subunit').on('mouseenter', function(geography) {
+	            	$("#countryName").html(['<div class="hover"><strong>', geography.properties.name,
+						'</strong></div>'].join(''));
+	            });
+
+	            datamap.svg.selectAll('.datamaps-subunit').on('mouseleave', function() {
+	            	$("#countryName").html("");
+	            });
 	        }
 	    });
 
 		//Async loads the countryToCode JSON file
 		$.getJSON( "/getCountryDisplays", function( json ) {
-			if(json === "failed") {
+			if(json.failed) {
 				$("#error").fadeIn();
 			} else {
+				$("#error").fadeOut();
 				countryToCode = json;
 			}
 		});
 
 		//Preferably alphabetically
 		$.getJSON( "/getCategories", function( json ) {
-			var indicatorInfo = $("#categoryInfo")[0];
-			indicatorInfo.innerHTML = "";
-			let x = "";
-			for (let key in json) {
-				x += "<button type=\"button\" class=\"list-group-item list-group-item-action\" onclick=\"getIndicator('"+ json[key] + "')\">" + json[key] + "</button>";
-			}
+			if(json.failed) {
+				$("#error").fadeIn();
+			} else {
+				$("#error").fadeOut();
+				var indicatorInfo = $("#categoryInfo")[0];
+				indicatorInfo.innerHTML = "";
+				let x = "";
+				for (let key in json) {
+					x += "<button type=\"button\" class=\"list-group-item list-group-item-action\" onclick=\"getIndicator('" + json[key] + "')\">" + json[key] + "</button>";
+				}
 
-			indicatorInfo.innerHTML += x;
+				indicatorInfo.innerHTML += x;
+			}
 		});
 
 		function getIndicator(key) {
@@ -185,39 +207,50 @@
 		}
 
 		function getYears(indicator) {
+			$("#loadingWrapper").fadeIn();
 			$.getJSON("getIndicatorValues?indicator=" + indicator, function(indicatorValues) {
-			    console.log(indicatorValues);
-			    console.log(indicatorValues[null]);
+				console.log(indicatorValues);
+				$("#loadingWrapper").fadeOut();
+				if(indicatorValues.failed) {
+					$("#error").fadeIn();
+				} else {
 
 
-				$.getJSON("getYearsForIndicator?indicator=" + indicator, function (json) {
-				    console.log(json);
-					var indicatorInfo = $("#yearInfo")[0];
-					indicatorInfo.innerHTML = "";
-					let x = ""
-					for (let key in json) {
-						x += "<button type=\"button\" class=\"list-group-item list-group-item-action\" onclick=\"getMap('" + indicator + "','" + json[key] + "')\">" + json[key] + "</button>";
-					}
-					indicatorInfo.innerHTML += x;
-					$("#years").fadeIn();
+					$.getJSON("getYearsForIndicator?indicator=" + indicator, function (json) {
+						console.log(json);
+						if(json.failed != null) {
+							$("#error").fadeIn();
+						} else {
+							$("#error").fadeOut();
+							var indicatorInfo = $("#yearInfo")[0];
+							indicatorInfo.innerHTML = "";
+							let x = "";
+							for (let key in json) {
+								x += "<button type=\"button\" class=\"list-group-item list-group-item-action\" onclick=\"getMap('" + indicator + "','" + json[key] + "')\">" + json[key] + "</button>";
+							}
+							indicatorInfo.innerHTML += x;
+							$("#years").fadeIn();
 
-					if(json.length == 0){
-						indicators2ignore.push(indicator);
-						console.log(indicators2ignore);
-					}
-				});
+							if (json.length == 0) {
+								indicators2ignore.push(indicator);
+								console.log(indicators2ignore);
+							}
+						}
+					});
+				}
 			});
 		}
 
 		function getMap(indicator,year) {
 			$.getJSON("getIndicatorValues?indicator=" + indicator + "&year=" + year , function(json) {
-
-				if(json === "failed") {
-					$("#error").fadeIn();
-				} else {
-					infoJson = json;
-					map.updateChoropleth(json, {reset: true});
-				}
+				console.log(json)
+				 if(json.failed) {
+					 $("#error").fadeIn();
+				 } else {
+					 $("#error").fadeOut();
+					 infoJson = json;
+					 map.updateChoropleth(json, {reset: true});
+				 }
             });
 
         }
@@ -326,7 +359,11 @@
         	var temp = geography.id;
         	if(infoJson) {
 				if (infoJson[temp]) {
-					info.innerHTML += '<br>' + infoJson[temp].data.IndicatorName + '<br>' + infoJson[temp].data.Value;
+					info.innerHTML += '<br><strong>Indicator:</strong> ' + infoJson[temp].data.IndicatorName +
+							'<br><strong>Category:</strong> ' + infoJson[temp].data.Category +
+							'<br><strong>Year:</strong> ' + infoJson[temp].data.Year +
+							'<br><strong>Value:</strong> ' + infoJson[temp].data.Value +
+							'<br><strong><a target="_blank" href="'+ infoJson[temp].data.URL +'" class="text-primary">More information...</a></strong>';
 				} else {
 					info.innerHTML += '<br> No data available';
 				}
