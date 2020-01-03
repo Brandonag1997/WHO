@@ -205,7 +205,7 @@ app.get("/getIndicatorValues", function (req, res) {
                         let output = {"years": [], "values": []};
                         for (let i = 0; i < rows.length; i++) {
                             output.years.push(rows[i].Year);
-                            output.values.push(rows[i].Year);
+                            output.values.push(rows[i].Year);  //probably a typo
                         }
 
                         res.json(output);
@@ -374,7 +374,7 @@ function updateIndicators() {
 
 app.get("/getYearsForIndicator", function(req, res){
     let indicator = mysql.escape(req.query.indicator);
-    let statement = `SELECT DISTINCT(Year) FROM IndicatorValue WHERE IndicatorShort=${indicator} ORDER BY Year DESC;`;
+    let statement = `SELECT Year, COUNT(Country) AS nCountries FROM IndicatorValue WHERE IndicatorShort=${indicator} GROUP BY Year ORDER BY Year DESC;`;
 
     conn.query(statement,function(err, rows, fields) {
         if (err) {
@@ -384,10 +384,10 @@ app.get("/getYearsForIndicator", function(req, res){
                 res.json({"failed":"getYearsForIndicator"}); res.status(500);
             });
         } else {
-            let output = [];
-
+            let output = {"year": [], "nCountries": []};
             for(let i = 0; i < rows.length; i++) {
-                output.push(rows[i].Year);
+                output.year.push(rows[i].Year);
+                output.nCountries.push(rows[i].nCountries)
             }
 
             res.json(output);

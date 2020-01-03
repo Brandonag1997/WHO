@@ -95,7 +95,7 @@
 		</div>
 	</div>
 	<script>
-		//Container that the 
+		//Container that the
 		var mapContainer = $("#mapContainer")[0];
 		//Variable for the information json
 		var infoJson;
@@ -106,7 +106,7 @@
 		let indicators2ignore = [];
 		let categories2ignore = [];
 		var countryList = [];
-		
+
 		//Map object that is what the entire D3 map revolves around. Takes in a single JSON object with various fields that tell the map how to act
 		var map = new Datamap({
 			//Element that the map is rendered in
@@ -227,8 +227,8 @@
 							var indicatorInfo = $("#yearInfo")[0];
 							indicatorInfo.innerHTML = "";
 							let x = "";
-							for (let key in json) {
-								x += "<button type=\"button\" class=\"list-group-item list-group-item-action\" onclick=\"getMap('" + indicator + "','" + json[key] + "')\">" + json[key] + "</button>";
+							for (let key in json.year) {
+								x += "<button type=\"button\" class=\"list-group-item list-group-item-action\" onclick=\"getMap('" + indicator + "','" + json.year[key] + "')\">" + json.year[key] + ": " + json.nCountries[key] + " countries" + "</button>";
 							}
 							indicatorInfo.innerHTML += x;
 							$("#years").fadeIn();
@@ -270,7 +270,7 @@
 	    	event.preventDefault();
 	    	//Get value of the input field
 	    	let countryInput = $('#countrySearch').val();
-	    	
+
 	    	let min = -1;
 	    	let word;
 
@@ -310,7 +310,7 @@
     				oldCountry.style('fill', fill);
 	    		}	}
 
-	    		//set the lastCountrySearched 
+	    		//set the lastCountrySearched
 	    		lastCountrySearched = countryToCode[word];
 	    		let geoConfig = map.options.geographyConfig;
 	    		//Write the data of the new country to the info panel
@@ -343,7 +343,7 @@
     				oldCountry.style('fill', fill);
 	    		}
 
-	    		//set the lastCountrySearched 
+	    		//set the lastCountrySearched
 	    		lastCountrySearched = countryToCode[countryInput];
 	    		let geoConfig = map.options.geographyConfig;
 
