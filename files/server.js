@@ -375,7 +375,7 @@ function updateIndicators() {
 
 app.get("/getYearsForIndicator", function(req, res){
     let indicator = mysql.escape(req.query.indicator);
-    let statement = `SELECT Year, COUNT(DISTINCT(Country)) AS nCountries FROM IndicatorValue WHERE IndicatorShort=${indicator} GROUP BY Year, ORDER BY Year DESC;`;
+    let statement = `SELECT Year, COUNT(DISTINCT(Country)) AS nCountries FROM IndicatorValue WHERE IndicatorShort=${indicator} GROUP BY Year ORDER BY Year DESC;`;
 
     conn.query(statement,function(err, rows, fields) {
         if (err) {
