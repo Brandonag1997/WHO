@@ -79,7 +79,7 @@ let putAllInDatabase = function(){
             }
 
             let url = mysql.escape(indicators[i].url);
-            if (indicators[i].url !== "" && indicators[i].display_sequence !== 0 && indicators[i].display_sequence !== 35) {
+            if (indicators[i].url !== "" ) {//&& indicators[i].display_sequence !== 0 && indicators[i].display_sequence !== 35) { //why display_sequence 0 & 35 not used
                 // comma delimited
                 if (i !== 0) statement += ",";
                 statement += '(' + label + ',' + display + ',' + category + ',' + url + ')';
@@ -117,7 +117,7 @@ app.get("/getCountries", function (req, res) {
     });
 });
 
-// Reverse display
+// Reverse display ?Is this endpoint needed?
 app.get("/getCountryDisplays", function (req, res) {
     let statement = "SELECT * FROM Country";
     conn.query(statement,function(err, rows, fields) {
@@ -214,7 +214,7 @@ app.get("/getIndicatorValues", function (req, res) {
                     conn.query(`DELETE FROM Indicator WHERE IndicatorShort=${mysql.escape(indicator)};`)
                 }
 
-            } else {
+            } else { //indicator not yet in database so get it from WHO API
 
                 let URL = "http://apps.who.int/gho/athena/api/GHO/" + indicator + "?format=json&profile=simple";
                 request.get(URL, function (error, response, body) {
@@ -243,7 +243,8 @@ app.get("/getIndicatorValues", function (req, res) {
                     conn.query(statement, function (err, rows2, fields) {
                         if (err) {
                             console.log('Known Issue, WHO Data incorrect... Error during query insert...' + err.sqlMessage);
-                            conn.query(`DELETE FROM Indicator WHERE IndicatorShort=${mysql.escape(indicator)};`,
+                            //conn.query(`DELETE FROM Indicator WHERE IndicatorShort=${mysql.escape(indicator)};`,
+                            conn.query(`SELECT IndicatorName FROM Indicator WHERE IndicatorShort=${mysql.escape(indicator)};`,
                             function (err, rows, fields) {
                                 res.json({"failed":"getIndicatorValues2"});
                                 res.status(500);
@@ -374,7 +375,7 @@ function updateIndicators() {
 
 app.get("/getYearsForIndicator", function(req, res){
     let indicator = mysql.escape(req.query.indicator);
-    let statement = `SELECT Year, COUNT(Country) AS nCountries FROM IndicatorValue WHERE IndicatorShort=${indicator} GROUP BY Year ORDER BY Year DESC;`;
+    let statement = `SELECT Year, COUNT(DISTINCT(Country)) AS nCountries FROM IndicatorValue WHERE IndicatorShort=${indicator} GROUP BY Year, ORDER BY Year DESC;`;
 
     conn.query(statement,function(err, rows, fields) {
         if (err) {
@@ -386,8 +387,8 @@ app.get("/getYearsForIndicator", function(req, res){
         } else {
             let output = {"year": [], "nCountries": []};
             for(let i = 0; i < rows.length; i++) {
-                output.year.push(rows[i].Year);
-                output.nCountries.push(rows[i].nCountries)
+              output.year.push(rows[i].Year);
+              output.nCountries.push(rows[i].nCountries)
             }
 
             res.json(output);
@@ -438,7 +439,7 @@ app.get("/getCategories", function(req, res){
             let output = [];
 
             for(let i = 0; i < rows.length; i++) {
-                let bad_categories = ["AMR GLASS Coordination", "AMR GLASS Quality assurance", "AMR GLASS Surveillance"];
+                let bad_categories = ["AMR GLASS Coordination", "AMR GLASS Quality assurance", "AMR GLASS Surveillance"]; //whats wrong with these?
                 if (bad_categories.indexOf(rows[i].Category) === -1)
                     output.push(rows[i].Category);
             }
