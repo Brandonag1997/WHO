@@ -281,10 +281,10 @@ app.get("/getIndicatorValues", function (req, res) {
                           } else {
                             console.log(indicator + ' does not contain data for any countries');
                           }
-                            // function (err, rows, fields) {
-                            //     res.json({"failed":"getIndicatorValues2"});
-                            //     res.status(500);
-                            // });
+                            conn.query(`SELECT IndicatorName FROM Indicator WHERE IndicatorShort=${mysql.escape(indicator)};`, function (err, rows, fields) {
+                                res.json({"failed":"getIndicatorValues2"});
+                                res.status(500);
+                            });
                         } else {
 
                             // IT would be better to put this in a function rather than having it much larger,
