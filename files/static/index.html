@@ -180,6 +180,7 @@
 		});
 
 		//Preferably alphabetically
+		//uses endpoint from server to get a list of categories available then display them on page
 		$.getJSON( "/getCategories", function( json ) {
 			if(json.failed) {
 				$("#error").fadeIn();
@@ -198,6 +199,8 @@
 
 		function getIndicator(key) {
 			//Preferably alphabetically
+			//gets a list of indicators and displays them on the page
+			//triggered when user clicks on a category button
 			$.getJSON("getIndicatorsForCategory?category=" + key, function (json) {
 				var indicatorInfo = $("#indicatorInfo")[0];
 				indicatorInfo.innerHTML = "";
@@ -211,6 +214,7 @@
 			});
 		}
 
+		//triggered when user clicks on an indicator button
 		function getYears(indicator) {
 			$("#loadingWrapper").fadeIn();
 			$.getJSON("getIndicatorValues?indicator=" + indicator, function(indicatorValues) {
@@ -220,7 +224,7 @@
 					$("#error").fadeIn();
 				} else {
 
-
+					//gets a list of years and number of contries sampled per year for specified indicator and displays them on the page
 					$.getJSON("getYearsForIndicator?indicator=" + indicator, function (json) {
 						console.log(json);
 						if(json.failed != null) {
@@ -230,8 +234,8 @@
 							var indicatorInfo = $("#yearInfo")[0];
 							indicatorInfo.innerHTML = "";
 							let x = "";
-							for (let key in json) {
-								x += "<button type=\"button\" class=\"list-group-item list-group-item-action\" onclick=\"getMap('" + indicator + "','" + json[key] + "')\">" + json[key] + "</button>";
+							for (let key in json.year) {
+								x += "<button type=\"button\" class=\"list-group-item list-group-item-action\" onclick=\"getMap('" + indicator + "','" + json.year[key] + "')\">" + json.year[key] + ": " + json.nCountries[key] + " countries" + "</button>";
 							}
 							indicatorInfo.innerHTML += x;
 							$("#years").fadeIn();
@@ -246,6 +250,8 @@
 			});
 		}
 
+		//triggered when user clicks on a year button
+		//gets the indicator values for specified year and updates the map(changes colors of each country to reflect indicator value compared to other contries(High,Medium,Low)) on page
 		function getMap(indicator,year) {
 			$.getJSON("getIndicatorValues?indicator=" + indicator + "&year=" + year , function(json) {
 				//console.log(json)
@@ -271,7 +277,7 @@
 
         }
 
-        getMap("MDG_0000000001", "2008");
+        getMap("MDG_0000000001", "2008"); //default???
 
 		//Listens for windows resize event and calls map.resize() to rerender the map
 		$(window).on('resize', function() {
@@ -369,6 +375,7 @@
 	    	}*/
 	    });
 	    //Function to write the info to the info panel. It takes a geography object, which is a type of D3 json object
+			//trigegred when a user clicks a country
 	    function writeInfo(geography) {
 
 
@@ -449,23 +456,27 @@
 
 
 	    	var info = document.getElementById('countryInfo');
+				//var info2 = document.getElementById('countryGraph');
+				info2 = d3.select
         	info.innerHTML = "<p class = \'h5\'>" + geography.properties.name + "</p>";
         	var temp = geography.id;
         	if(infoJson) {
-				if (infoJson[temp]) {
-					info.innerHTML += '<br><strong>Indicator:</strong> ' + infoJson[temp].data.IndicatorName +
-							'<br><strong>Category:</strong> ' + infoJson[temp].data.Category +
-							'<br><strong>Year:</strong> ' + infoJson[temp].data.Year +
-							'<br><strong>Value:</strong> ' + infoJson[temp].data.Value +
-							'<br><strong><a target="_blank" href="'+ infoJson[temp].data.URL +'" class="text-primary">More information...</a></strong>';
-				} else {
-					info.innerHTML += '<br> No data available';
-				}
-			}
+						if (infoJson[temp]) {
+							info.innerHTML += '<br><strong>Indicator:</strong> ' + infoJson[temp].data.IndicatorName +
+									'<br><strong>Category:</strong> ' + infoJson[temp].data.Category +
+									'<br><strong>Year:</strong> ' + infoJson[temp].data.Year +
+									'<br><strong>Value:</strong> ' + infoJson[temp].data.Value +
+									'<br><strong><a target="_blank" href="'+ infoJson[temp].data.URL +'" class="text-primary">More information...</a></strong>';
+						} else {
+							info.innerHTML += '<br> No data available';
+						}
+					}
+					info2.innerHTML="<p class = \'h5\'>" + 'test' + "</p>";
 
         	$("#infoContainer").fadeIn();
 	    }
 
+			//used for country search feature
 	    //Calculate distance between two strings
 	    //Code originates from https://stackoverflow.com/questions/11919065/sort-an-array-by-the-levenshtein-distance-with-best-performance-in-javascript/11958496
 	    function levDist(s, t) {
