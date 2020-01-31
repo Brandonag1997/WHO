@@ -205,7 +205,7 @@ app.get("/getIndicatorValues", function (req, res) {
                         let output = {"years": [], "values": []};
                         for (let i = 0; i < rows.length; i++) {
                             output.years.push(rows[i].Year);
-                            output.values.push(rows[i].Year);
+                            output.values.push(rows[i].Value);
                         }
 
                         res.json(output);

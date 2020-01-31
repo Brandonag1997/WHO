@@ -75,6 +75,7 @@
 				<div id="infoContainer">
 					<div id="close">&times;</div>
 					<div id="countryInfo"></div>
+					<div id="testGraph"></div>
 				</div>
 
 				<div id="searchContainer">
@@ -95,10 +96,12 @@
 		</div>
 	</div>
 	<script>
-		//Container that the 
+		//Container that the
 		var mapContainer = $("#mapContainer")[0];
 		//Variable for the information json
 		var infoJson;
+		//Variable for time series numerical data
+		var timeJson;
 		//Variable for the countryCodes
 		var countryToCode;
 		//Variable for the most recently searched country. Used to keep track of which country need's its color turned back to normal
@@ -106,7 +109,7 @@
 		let indicators2ignore = [];
 		let categories2ignore = [];
 		var countryList = [];
-		
+
 		//Map object that is what the entire D3 map revolves around. Takes in a single JSON object with various fields that tell the map how to act
 		var map = new Datamap({
 			//Element that the map is rendered in
@@ -245,7 +248,7 @@
 
 		function getMap(indicator,year) {
 			$.getJSON("getIndicatorValues?indicator=" + indicator + "&year=" + year , function(json) {
-				console.log(json)
+				//console.log(json)
 				 if(json.failed) {
 					 $("#error").fadeIn();
 				 } else {
@@ -254,6 +257,17 @@
 					 map.updateChoropleth(json, {reset: true});
 				 }
             });
+
+			$.getJSON("getIndicatorValues?indicator=" + indicator , function(json) {
+				console.log(json)
+				 if(json.failed) {
+					 $("#error").fadeIn();
+				 } else {
+					 $("#error").fadeOut();
+					 timeJson = json;
+					 map.updateChoropleth(json, {reset: true});
+				 }
+	          });
 
         }
 
@@ -270,7 +284,7 @@
 	    	event.preventDefault();
 	    	//Get value of the input field
 	    	let countryInput = $('#countrySearch').val();
-	    	
+
 	    	let min = -1;
 	    	let word;
 
@@ -310,7 +324,7 @@
     				oldCountry.style('fill', fill);
 	    		}	}
 
-	    		//set the lastCountrySearched 
+	    		//set the lastCountrySearched
 	    		lastCountrySearched = countryToCode[word];
 	    		let geoConfig = map.options.geographyConfig;
 	    		//Write the data of the new country to the info panel
@@ -343,7 +357,7 @@
     				oldCountry.style('fill', fill);
 	    		}
 
-	    		//set the lastCountrySearched 
+	    		//set the lastCountrySearched
 	    		lastCountrySearched = countryToCode[countryInput];
 	    		let geoConfig = map.options.geographyConfig;
 
@@ -356,6 +370,84 @@
 	    });
 	    //Function to write the info to the info panel. It takes a geography object, which is a type of D3 json object
 	    function writeInfo(geography) {
+
+
+				if (timeJson) {
+					var width = 400;
+					var height = 200;
+
+					// parse the date / time
+					var parseTime = d3.time.format("%Y").parse;
+
+					var x = d3.time.scale().range([0, width]);
+					var y = d3.scale.linear().range([height, 0]);
+
+					var xAxis = d3.svg.axis().scale(x)
+							.orient("bottom").ticks(9);
+
+					var yAxis = d3.svg.axis().scale(y)
+							.orient("left").ticks(10);
+
+					var valueline = d3.svg.line()
+							.x(function(d) { return x(d.Date); })
+							.y(function(d) { return y(d.Imports); });
+
+					d3.select("#testGraph").select("svg").remove();
+					var svg = d3.select("#testGraph").append("svg")
+							.attr("width", width)
+							.attr("height", height)
+							.style("fill", "none")
+							.style("stroke", "steelblue");
+
+					function draw(data, country) {
+
+						var data = data[country];
+
+						// format the data
+						data.forEach(function(d) {
+								//d.Date = parseTime(d.Date);
+								d.Date = d.Date;
+								d.Imports = +d.Imports;
+								//d.Exports = +d.Exports;
+						});
+
+						// sort years ascending
+						data.sort(function(a, b){
+							return a["Date"]-b["Date"];
+						})
+
+						// Scale the range of the data
+						x.domain(d3.extent(data, function(d) { return d.Date; }));
+						y.domain([0, d3.max(data, function(d) {
+							return Math.max(d.Imports); })]); //
+							//return Math.max(d.Imports, d.Exports); })]);
+
+						// Add the valueline path.
+						svg.append("path")
+								.data([data])
+								.attr("class", "line")
+								.attr("d", valueline);
+
+						// Add the X Axis
+						svg.append("g")
+								.attr("transform", "translate(0," + height + ")")
+								.call(xAxis);
+
+						// Add the Y Axis
+						svg.append("g")
+								.call(yAxis);
+						}
+
+					// Get the data
+					d3.json("data2.json", function(error, data) {
+						if (error) throw error;
+
+						// trigger render
+						draw(data, "Afghanistan");
+					});
+				}
+
+
 	    	var info = document.getElementById('countryInfo');
         	info.innerHTML = "<p class = \'h5\'>" + geography.properties.name + "</p>";
         	var temp = geography.id;
