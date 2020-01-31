@@ -379,80 +379,83 @@
 	    function writeInfo(geography) {
 
 
-				if (timeJson) {
-					var width = 400;
-					var height = 200;
-
-					// parse the date / time
-					var parseTime = d3.time.format("%Y").parse;
-
-					var x = d3.time.scale().range([0, width]);
-					var y = d3.scale.linear().range([height, 0]);
-
-					var xAxis = d3.svg.axis().scale(x)
-							.orient("bottom").ticks(9);
-
-					var yAxis = d3.svg.axis().scale(y)
-							.orient("left").ticks(10);
-
-					var valueline = d3.svg.line()
-							.x(function(d) { return x(d.Date); })
-							.y(function(d) { return y(d.Imports); });
-
-					d3.select("#testGraph").select("svg").remove();
-					var svg = d3.select("#testGraph").append("svg")
-							.attr("width", width)
-							.attr("height", height)
-							.style("fill", "none")
-							.style("stroke", "steelblue");
-
-					function draw(data, country) {
-
-						var data = data[country];
-
-						// format the data
-						data.forEach(function(d) {
-								//d.Date = parseTime(d.Date);
-								d.Date = d.Date;
-								d.Imports = +d.Imports;
-								//d.Exports = +d.Exports;
-						});
-
-						// sort years ascending
-						data.sort(function(a, b){
-							return a["Date"]-b["Date"];
-						})
-
-						// Scale the range of the data
-						x.domain(d3.extent(data, function(d) { return d.Date; }));
-						y.domain([0, d3.max(data, function(d) {
-							return Math.max(d.Imports); })]); //
-							//return Math.max(d.Imports, d.Exports); })]);
-
-						// Add the valueline path.
-						svg.append("path")
-								.data([data])
-								.attr("class", "line")
-								.attr("d", valueline);
-
-						// Add the X Axis
-						svg.append("g")
-								.attr("transform", "translate(0," + height + ")")
-								.call(xAxis);
-
-						// Add the Y Axis
-						svg.append("g")
-								.call(yAxis);
-						}
-
-					// Get the data
-					d3.json("data2.json", function(error, data) {
-						if (error) throw error;
-
-						// trigger render
-						draw(data, "Afghanistan");
-					});
-				}
+				// if (timeJson) {
+				// 	console.log("displaying graph");
+				// 	var width = 400;
+				// 	var height = 200;
+				//
+				// 	// parse the date / time
+				// 	var parseTime = d3.time.format("%Y").parse;
+				//
+				// 	var x = d3.time.scale().range([0, width]);
+				// 	var y = d3.scale.linear().range([height, 0]);
+				//
+				// 	var xAxis = d3.svg.axis().scale(x)
+				// 			.orient("bottom").ticks(9);
+				//
+				// 	var yAxis = d3.svg.axis().scale(y)
+				// 			.orient("left").ticks(10);
+				//
+				// 	var valueline = d3.svg.line()
+				// 			.x(function(d) { return x(d.Date); })
+				// 			.y(function(d) { return y(d.Imports); });
+				//
+				// 	d3.select("#testGraph").select("svg").remove();
+				// 	var svg = d3.select("#testGraph").append("svg")
+				// 			.attr("width", width)
+				// 			.attr("height", height)
+				// 			.style("fill", "none")
+				// 			.style("stroke", "steelblue");
+				//
+				// 	function draw(data) {
+				//
+				// 		var json = data;
+				// 		for (let key in json) {
+				// 			x += "<button type=\"button\" class=\"list-group-item list-group-item-action\" onclick=\"getIndicator('" + json[key] + "')\">" + json[key] + "</button>";
+				// 		}
+				// 		// format the data
+				// 		data.forEach(function(d) {
+				// 				//d.Date = parseTime(d.Date);
+				// 				d.Date = d.Date;
+				// 				d.Imports = +d.Imports;
+				// 				//d.Exports = +d.Exports;
+				// 		});
+				//
+				// 		// sort years ascending
+				// 		data.sort(function(a, b){
+				// 			return a["Date"]-b["Date"];
+				// 		})
+				//
+				// 		// Scale the range of the data
+				// 		x.domain(d3.extent(data, function(d) { return d.Date; }));
+				// 		y.domain([0, d3.max(data, function(d) {
+				// 			return Math.max(d.Imports); })]); //
+				// 			//return Math.max(d.Imports, d.Exports); })]);
+				//
+				// 		// Add the valueline path.
+				// 		svg.append("path")
+				// 				.data([data])
+				// 				.attr("class", "line")
+				// 				.attr("d", valueline);
+				//
+				// 		// Add the X Axis
+				// 		svg.append("g")
+				// 				.attr("transform", "translate(0," + height + ")")
+				// 				.call(xAxis);
+				//
+				// 		// Add the Y Axis
+				// 		svg.append("g")
+				// 				.call(yAxis);
+				// 		}
+				//
+				// 	// Get the data
+				// 	d3.json("data2.json", function(error, data) {
+				// 		if (error) throw error;
+				//
+				// 		// trigger render
+				// 		draw(data);
+				// 	});
+				// }
 
 
 	    	var info = document.getElementById('countryInfo');
