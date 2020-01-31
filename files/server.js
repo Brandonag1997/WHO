@@ -173,7 +173,7 @@ app.get("/getIndicatorValues", function (req, res) {
     // year not required
     let qyear = req.query.year;
     let yearStatement = "";
-    if (qyear) yearStatement= `AND Year=${qyear} ORDER BY Value;`;
+    if (qyear) yearStatement= `AND Year=${qyear} ORDER BY NumericValue;`;
     else yearStatement= `ORDER BY Year;`;
 
     // if not in database
@@ -191,13 +191,13 @@ app.get("/getIndicatorValues", function (req, res) {
                         let max = rows[rows.length - 1];
                         let output = {};
 
-                        let range = (max.Value - min.Value) / 3;
+                        let range = (max.NumericValue - min.NumericValue) / 3;
 
                         for (let i = 0; i < rows.length; i++) {
                             let fillKey;
-                            if (rows[i].Value < range) {
+                            if (rows[i].NumericValue < range) {
                                 fillKey = "LOW";
-                            } else if (rows[i].Value < 2 * range) {
+                            } else if (rows[i].NumericValue < 2 * range) {
                                 fillKey = "MEDIUM";
                             } else {
                                 fillKey = "HIGH";
@@ -213,7 +213,7 @@ app.get("/getIndicatorValues", function (req, res) {
                         let output = {"years": [], "values": []};
                         for (let i = 0; i < rows.length; i++) {
                             output.years.push(rows[i].Year);
-                            output.values.push(rows[i].values);
+                            output.values.push(rows[i].NumericValue);
                         }
 
                         res.json(output);
@@ -230,7 +230,7 @@ app.get("/getIndicatorValues", function (req, res) {
                     //let dataPoints = json.fact;
                     let dataPoints = json.value;
 
-                    let statement = 'INSERT IGNORE INTO IndicatorValue (Year,Value,Sex,Country,IndicatorShort) VALUES ';
+                    let statement = 'INSERT IGNORE INTO IndicatorValue (Year,Value,NumericValue,Sex,Country,IndicatorShort) VALUES ';
                     let datapoints = 0;
 
                     for (let i = 0; i < dataPoints.length; i++) {
@@ -239,6 +239,7 @@ app.get("/getIndicatorValues", function (req, res) {
                         let year;
                         let sex;
                         let value;
+                        let numericalvalue
                         //only load in indicator values for countries
                         if (dataPoints[i].SpatialDimType=="COUNTRY") {
                           let countryCode = dataPoints[i].SpatialDim;
@@ -259,10 +260,11 @@ app.get("/getIndicatorValues", function (req, res) {
                             sex="'?'";
                           }
 
-                          value = mysql.escape(dataPoints[i].NumericValue);
+                          value = mysql.escape(dataPoints[i].Value);
+                          numericalvalue = mysql.escape(dataPoints[i].NumericValue);
 
-                          if (statement != 'INSERT IGNORE INTO IndicatorValue (Year,Value,Sex,Country,IndicatorShort) VALUES ') statement += ",";
-                          statement += '(' + year + ',' + value + ',' + sex + ',' + country + ',' + mysql.escape(indicator) + ')';
+                          if (statement != 'INSERT IGNORE INTO IndicatorValue (Year,Value,NumericValue,Sex,Country,IndicatorShort) VALUES ') statement += ",";
+                          statement += '(' + year + ',' + value + ',' + numericalvalue + ',' + sex + ',' + country + ',' + mysql.escape(indicator) + ')';
                           datapoints += 1;
                         }
 
@@ -301,14 +303,15 @@ app.get("/getIndicatorValues", function (req, res) {
                                                 let min = rows3[0];
                                                 let max = rows3[rows.length - 1];
                                                 let output = {};
-
-                                                let range = (max.Value - min.Value) / 3;
+                                                console.log(max);
+                                                console.log(min);
+                                                let range = (max.NumericValue - min.NumericValue) / 3;
 
                                                 for (let i = 0; i < rows3.length; i++) {
                                                     let fillKey;
-                                                    if (rows3[i].Value < range) {
+                                                    if (rows3[i].NumericValue < range) {
                                                         fillKey = "LOW";
-                                                    } else if (rows3[i].Value < 2 * range) {
+                                                    } else if (rows3[i].NumericValue < 2 * range) {
                                                         fillKey = "MEDIUM";
                                                     } else {
                                                         fillKey = "HIGH";
@@ -327,7 +330,7 @@ app.get("/getIndicatorValues", function (req, res) {
                                                 let output = {"years": [], "values": []};
                                                 for (let i = 0; i < rows.length; i++) {
                                                     output.years.push(rows[i].Year);
-                                                    output.values.push(rows[i].values);
+                                                    output.values.push(rows[i].NumericValue);
                                                 }
 
                                                 res.json(output);
@@ -369,7 +372,7 @@ function updateIndicators() {
                   let json = JSON.parse(body);
                   let dataPoints = json.value;
 
-                  let insertstatement = 'INSERT IGNORE INTO IndicatorValue (Year,Value,Sex,Country,IndicatorShort) VALUES ';
+                  let insertstatement = 'INSERT IGNORE INTO IndicatorValue (Year,Value,NumericValue,Sex,Country,IndicatorShort) VALUES ';
 
                   for (let i = 0; i < dataPoints.length; i++) {
                     let country;
@@ -396,14 +399,15 @@ function updateIndicators() {
                         sex="'?'";
                       }
 
-                      value = mysql.escape(dataPoints[i].NumericValue);
+                      value = mysql.escape(dataPoints[i].Value);
+                      numericalvalue = mysql.escape(dataPoints[i].NumericValue);
 
-                      if (insertstatement != 'INSERT IGNORE INTO IndicatorValue (Year,Value,Sex,Country,IndicatorShort) VALUES ') insertstatement += ",";
-                      insertstatement += '(' + year + ',' + value + ',' + sex + ',' + country + ',' + mysql.escape(indicator) + ')';
+                      if (insertstatement != 'INSERT IGNORE INTO IndicatorValue (Year,Value,NumericValue,Sex,Country,IndicatorShort) VALUES ') insertstatement += ",";
+                      insertstatement += '(' + year + ',' + value + ',' + numericalvalue + ',' + sex + ',' + country + ',' + mysql.escape(indicator) + ')';
                     }
                   }
 
-                  insertstatement += "ON DUPLICATE KEY UPDATE Year=VALUES(Year),Value=VALUES(Value),Sex=VALUES(Sex),Country=VALUES(Country),IndicatorShort=VALUES(IndicatorShort);";
+                  insertstatement += "ON DUPLICATE KEY UPDATE Year=VALUES(Year),Value=VALUES(Value),NumericValue=VALUES(NumericValue),Sex=VALUES(Sex),Country=VALUES(Country),IndicatorShort=VALUES(IndicatorShort);";
 
                   conn.query(insertstatement, function(err, rows2, fields){
                     if (err) {
@@ -495,7 +499,6 @@ app.get("/getCategories", function(req, res){
                 if (bad_categories.indexOf(rows[i].Category) === -1)
                     output.push(rows[i].Category);
             }
-
             res.json(output);
         }
     });

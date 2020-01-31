@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS who_data2;
-USE who_data2;
+CREATE DATABASE IF NOT EXISTS who_data3;
+USE who_data3;
 
 CREATE TABLE `Indicator` (
   `IndicatorShort` varchar(45) PRIMARY KEY NOT NULL,
@@ -27,4 +27,4 @@ CREATE TABLE `IndicatorValue` (
 ALTER TABLE `IndicatorValue` ADD FOREIGN KEY (`IndicatorShort`) REFERENCES `Indicator` (`IndicatorShort`) ON DELETE CASCADE;
 ALTER TABLE `IndicatorValue` ADD FOREIGN KEY (`Country`) REFERENCES `Country` (`DisplayName`);
 
-CREATE UNIQUE INDEX `IndicatorValue_index_0` ON `IndicatorValue` (`Year`, `Value`, `Sex`, `Country`, `IndicatorShort`);
+CREATE UNIQUE INDEX `IndicatorValue_index_0` ON `IndicatorValue` (`Year`, `Value`, `NumericValue`, `Sex`, `Country`, `IndicatorShort`);
