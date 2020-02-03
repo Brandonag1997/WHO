@@ -1,3 +1,5 @@
+var fs = require('fs');
+
 /* Dependencies */
 let express = require("express");
 let request = require("request");
@@ -174,10 +176,13 @@ app.get("/getIndicatorValues", function (req, res) {
     let qyear = req.query.year;
     let yearStatement = "";
     if (qyear) yearStatement= `AND Year=${qyear} ORDER BY NumericValue;`;
-    else yearStatement= `ORDER BY Year;`;
-
-    // if not in database
-    let statement = `SELECT * FROM IndicatorValue AS i LEFT JOIN Country AS c ON i.Country = c.DisplayName INNER JOIN Indicator AS i2 ON i.IndicatorShort = i2.IndicatorShort WHERE i.IndicatorShort=${mysql.escape(indicator)} ${yearStatement}`;
+    else yearStatement= `ORDER BY Country;`;
+    let statement = "";
+    if (qyear) {
+      statement = `SELECT I.IndicatorName, I.Category, I.URL, IV.Year, IV.Value, IV.NumericValue, IV.Country, IV.Sex, C.CountryShort FROM Indicator AS I INNER JOIN IndicatorValue AS IV ON IV.IndicatorShort = I.IndicatorShort INNER JOIN COUNTRY AS C ON C.DisplayName = IV.Country WHERE I.IndicatorShort = ${mysql.escape(indicator)} ${yearStatement}; `;
+    } else {
+      statement = `SELECT I.IndicatorName, I.Category, I.URL, IV.Year, IV.Value, IV.NumericValue, IV.Country, IV.Sex, C.CountryShort, count(*) over (partition by IV.Country) AS countryCount FROM Indicator AS I INNER JOIN IndicatorValue AS IV ON IV.IndicatorShort = I.IndicatorShort INNER JOIN COUNTRY AS C ON C.DisplayName = IV.Country WHERE I.IndicatorShort = ${mysql.escape(indicator)} ORDER BY Country;`;
+    }
 
     conn.query(statement,function(err, rows, fields) {
         if (err) {
@@ -210,12 +215,25 @@ app.get("/getIndicatorValues", function (req, res) {
                     } else {
 
                         // indicators for all
-                        let output = {"years": [], "values": []};
+                        let output = {};
+                        //let output = {"years": [], "values": []};
                         for (let i = 0; i < rows.length; i++) {
-                            output.years.push(rows[i].Year);
-                            output.values.push(rows[i].NumericValue);
+                            //output.push(rows[i].CountryShort)
+                            output[rows[i].CountryShort] = [];
+                            for (var j = 0; j < rows[i].countryCount; j++) {
+                              output[rows[i].CountryShort].push({"years": rows[i+j].Year, "values": rows[i+j].NumericValue}, "sex": rows[i+j].Sex)
+                              //output[rows[i+j].CountryShort].years.push(rows[i+j].Year);
+                              //output[rows[i+j].CountryShort].values.push(rows[i+j].NumericValue);
+                            }
+                            i = i + j - 1;
+                            //output.years.push(rows[i].Year);
+                            //output.values.push(rows[i].NumericValue);
                         }
-
+                        fs.writeFile("test.json", JSON.stringify(output), function(err) {
+                          if (err) {
+                            console.log(err);
+                          }
+                        });
                         res.json(output);
                     }
                 // } else {
@@ -249,11 +267,11 @@ app.get("/getIndicatorValues", function (req, res) {
                           }
 
                           if (dataPoints[i].Dim1Type=="SEX") {
-                            if (dataPoints[i].Dim1="MLE") {
+                            if (dataPoints[i].Dim1=="MLE") {
                               sex = "'M'";
-                            } else if (dataPoints[i].Dim1="FMLE") {
+                            } else if (dataPoints[i].Dim1=="FMLE") {
                               sex = "'F'";
-                            } else if (dataPoints[i].Dim1="BTSX") {
+                            } else if (dataPoints[i].Dim1=="BTSX") {
                               sex = "'B'";
                             }
                           } else {
@@ -303,8 +321,8 @@ app.get("/getIndicatorValues", function (req, res) {
                                                 let min = rows3[0];
                                                 let max = rows3[rows.length - 1];
                                                 let output = {};
-                                                console.log(max);
-                                                console.log(min);
+                                                //console.log(max);
+                                                //console.log(min);
                                                 let range = (max.NumericValue - min.NumericValue) / 3;
 
                                                 for (let i = 0; i < rows3.length; i++) {
@@ -388,11 +406,11 @@ function updateIndicators() {
                       }
 
                       if (dataPoints[i].Dim1Type=="SEX") {
-                        if (dataPoints[i].Dim1="MLE") {
+                        if (dataPoints[i].Dim1=="MLE") {
                           sex = "'M'";
-                        } else if (dataPoints[i].Dim1="FMLE") {
+                        } else if (dataPoints[i].Dim1=="FMLE") {
                           sex = "'F'";
-                        } else if (dataPoints[i].Dim1="BTSX") {
+                        } else if (dataPoints[i].Dim1=="BTSX") {
                           sex = "'B'";
                         }
                       } else {
