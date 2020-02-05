@@ -38,6 +38,9 @@ let putAllInDatabase = function(){
     // Countries:
     let COUNTRIES = "https://ghoapi.azureedge.net/api/DIMENSION/COUNTRY/DimensionValues"
     request.get(COUNTRIES, function (error, response, body) {
+      if (body=="Api is in maintenance mode") {
+        console.log("data not available");
+      } else {
         let json = JSON.parse(body);
         let countries = json.value;
 
@@ -66,6 +69,7 @@ let putAllInDatabase = function(){
                 console.log('Countries updated!');
             }
         });
+      }
     });
 
     // Indicators:
@@ -105,6 +109,45 @@ let putAllInDatabase = function(){
         });
     });
 };
+
+function selectIndicators(qyear, rows){
+  if (qyear != null) {
+      let min = rows[0];
+      let max = rows[rows.length - 1];
+      let output = {};
+
+      let range = (max.NumericValue - min.NumericValue) / 3;
+
+      for (let i = 0; i < rows.length; i++) {
+          let fillKey;
+          if (rows[i].NumericValue < range) {
+              fillKey = "LOW";
+          } else if (rows[i].NumericValue < 2 * range) {
+              fillKey = "MEDIUM";
+          } else {
+              fillKey = "HIGH";
+          }
+
+          output[rows[i].CountryShort] = {"fillKey": fillKey, "data": rows[i]};
+      }
+
+      return output;
+  } else {
+
+      // indicators for all
+      let output = {};
+      output[rows[0].Country] = [];
+      for (let i = 0; i < rows.length; i++) {
+          output[rows[i].Country].push({"year": rows[i].Year, "value": rows[i].NumericValue, "sex": rows[i].Sex});
+          // output[rows[i].Country] = [];
+          // for (var j = 0; j < rows[i].country; j++) {
+          //   output[rows[i].Country].push({"year": rows[i+j].Year, "value": rows[i+j].NumericValue, "sex": rows[i+j].Sex})
+          // }
+          // i = i + j - 1;
+      }
+      return output;
+  }
+}
 
 /* /getCountries
  * Purpose: Gets list of all countries WHO tracks
@@ -179,9 +222,10 @@ app.get("/getIndicatorValues", function (req, res) {
     else yearStatement= `ORDER BY Country;`;
     let statement = "";
     if (qyear) {
-      statement = `SELECT I.IndicatorName, I.Category, I.URL, IV.Year, IV.Value, IV.NumericValue, IV.Country, IV.Sex, C.CountryShort FROM Indicator AS I INNER JOIN IndicatorValue AS IV ON IV.IndicatorShort = I.IndicatorShort INNER JOIN COUNTRY AS C ON C.DisplayName = IV.Country WHERE I.IndicatorShort = ${mysql.escape(indicator)} ${yearStatement}; `;
+      statement = `SELECT I.IndicatorName, I.Category, I.URL, I.IndicatorShort, IV.Year, IV.Value, IV.NumericValue, IV.Country, IV.Sex, C.CountryShort FROM Indicator AS I INNER JOIN IndicatorValue AS IV ON IV.IndicatorShort = I.IndicatorShort INNER JOIN COUNTRY AS C ON C.DisplayName = IV.Country WHERE I.IndicatorShort = ${mysql.escape(indicator)} ${yearStatement}; `;
     } else {
-      statement = `SELECT I.IndicatorName, I.Category, I.URL, IV.Year, IV.Value, IV.NumericValue, IV.Country, IV.Sex, C.CountryShort, count(*) over (partition by IV.Country) AS countryCount FROM Indicator AS I INNER JOIN IndicatorValue AS IV ON IV.IndicatorShort = I.IndicatorShort INNER JOIN COUNTRY AS C ON C.DisplayName = IV.Country WHERE I.IndicatorShort = ${mysql.escape(indicator)} ORDER BY Country;`;
+      statement = `SELECT I.IndicatorName, I.Category, I.URL, IV.Year, IV.Value, IV.NumericValue, IV.Country, IV.Sex, count(*) over (partition by IV.Country) AS countryCount FROM Indicator AS I INNER JOIN IndicatorValue AS IV ON IV.IndicatorShort = I.IndicatorShort
+                    WHERE I.IndicatorShort = ${mysql.escape(indicator)} ORDER BY IV.Country, IV.Sex, IV.NumericValue;`;
     }
 
     conn.query(statement,function(err, rows, fields) {
@@ -191,51 +235,8 @@ app.get("/getIndicatorValues", function (req, res) {
         } else {
             if (rows.length >= 1) {
                 //if(rows[0].Country !== null) {
-                    if (qyear) {
-                        let min = rows[0];
-                        let max = rows[rows.length - 1];
-                        let output = {};
-
-                        let range = (max.NumericValue - min.NumericValue) / 3;
-
-                        for (let i = 0; i < rows.length; i++) {
-                            let fillKey;
-                            if (rows[i].NumericValue < range) {
-                                fillKey = "LOW";
-                            } else if (rows[i].NumericValue < 2 * range) {
-                                fillKey = "MEDIUM";
-                            } else {
-                                fillKey = "HIGH";
-                            }
-
-                            output[rows[i].CountryShort] = {"fillKey": fillKey, "data": rows[i]};
-                        }
-
-                        res.json(output);
-                    } else {
-
-                        // indicators for all
-                        let output = {};
-                        //let output = {"years": [], "values": []};
-                        for (let i = 0; i < rows.length; i++) {
-                            //output.push(rows[i].CountryShort)
-                            output[rows[i].CountryShort] = [];
-                            for (var j = 0; j < rows[i].countryCount; j++) {
-                              output[rows[i].CountryShort].push({"years": rows[i+j].Year, "values": rows[i+j].NumericValue}, "sex": rows[i+j].Sex)
-                              //output[rows[i+j].CountryShort].years.push(rows[i+j].Year);
-                              //output[rows[i+j].CountryShort].values.push(rows[i+j].NumericValue);
-                            }
-                            i = i + j - 1;
-                            //output.years.push(rows[i].Year);
-                            //output.values.push(rows[i].NumericValue);
-                        }
-                        fs.writeFile("test.json", JSON.stringify(output), function(err) {
-                          if (err) {
-                            console.log(err);
-                          }
-                        });
-                        res.json(output);
-                    }
+                response = selectIndicators(qyear, rows);
+                res.json(response);
                 // } else {
                 //     conn.query(`DELETE FROM Indicator WHERE IndicatorShort=${mysql.escape(indicator)};`)
                 // }
@@ -248,7 +249,7 @@ app.get("/getIndicatorValues", function (req, res) {
                     //let dataPoints = json.fact;
                     let dataPoints = json.value;
 
-                    let statement = 'INSERT IGNORE INTO IndicatorValue (Year,Value,NumericValue,Sex,Country,IndicatorShort) VALUES ';
+                    let statementI = 'INSERT IGNORE INTO IndicatorValue (Year,Value,NumericValue,Sex,Country,IndicatorShort) VALUES ';
                     let datapoints = 0;
 
                     for (let i = 0; i < dataPoints.length; i++) {
@@ -281,18 +282,18 @@ app.get("/getIndicatorValues", function (req, res) {
                           value = mysql.escape(dataPoints[i].Value);
                           numericalvalue = mysql.escape(dataPoints[i].NumericValue);
 
-                          if (statement != 'INSERT IGNORE INTO IndicatorValue (Year,Value,NumericValue,Sex,Country,IndicatorShort) VALUES ') statement += ",";
-                          statement += '(' + year + ',' + value + ',' + numericalvalue + ',' + sex + ',' + country + ',' + mysql.escape(indicator) + ')';
+                          if (statementI != 'INSERT IGNORE INTO IndicatorValue (Year,Value,NumericValue,Sex,Country,IndicatorShort) VALUES ') statementI += ",";
+                          statementI += '(' + year + ',' + value + ',' + numericalvalue + ',' + sex + ',' + country + ',' + mysql.escape(indicator) + ')';
                           datapoints += 1;
                         }
 
 
                     }
 
-                    statement += ";";
+                    statementI += ";";
                     //console.log(statement);
 
-                    conn.query(statement, function (err, rows2, fields) {
+                    conn.query(statementI, function (err, rows2, fields) {
                         if (err) {
                           if (datapoints > 0) {
                             console.log('Known Issue, WHO Data incorrect... Error during query insert...' + indicator + err.sqlMessage);
@@ -309,58 +310,15 @@ app.get("/getIndicatorValues", function (req, res) {
 
                             // IT would be better to put this in a function rather than having it much larger,
                             // to avoid duplicate code, but we are on a deadline...
-                            let statement = `SELECT * FROM IndicatorValue AS i LEFT JOIN Country AS c ON i.Country = c.DisplayName INNER JOIN Indicator AS i2 ON i.IndicatorShort = i2.IndicatorShort WHERE i.IndicatorShort=${mysql.escape(indicator)} ${yearStatement}`;
+                            //let statement = `SELECT * FROM IndicatorValue AS i LEFT JOIN Country AS c ON i.Country = c.DisplayName INNER JOIN Indicator AS i2 ON i.IndicatorShort = i2.IndicatorShort WHERE i.IndicatorShort=${mysql.escape(indicator)} ${yearStatement}`;
                             conn.query(statement,function(err, rows3, fields) {
                                 if (err) {
                                     console.log('Error during query select...'  + err.sqlMessage);
                                     res.json({"failed":"getIndicatorValues3"}); res.status(500);
                                 } else {
                                     if(rows3.length > 0) {
-                                        if (rows3[0].Country !== null) {
-                                            if (qyear) {
-                                                let min = rows3[0];
-                                                let max = rows3[rows.length - 1];
-                                                let output = {};
-                                                //console.log(max);
-                                                //console.log(min);
-                                                let range = (max.NumericValue - min.NumericValue) / 3;
-
-                                                for (let i = 0; i < rows3.length; i++) {
-                                                    let fillKey;
-                                                    if (rows3[i].NumericValue < range) {
-                                                        fillKey = "LOW";
-                                                    } else if (rows3[i].NumericValue < 2 * range) {
-                                                        fillKey = "MEDIUM";
-                                                    } else {
-                                                        fillKey = "HIGH";
-                                                    }
-
-                                                    output[rows3[i].CountryShort] = {
-                                                        "fillKey": fillKey,
-                                                        "data": rows[i]
-                                                    };
-                                                }
-
-                                                res.json(output);
-
-                                            } else {
-                                                // indicators for all years
-                                                let output = {"years": [], "values": []};
-                                                for (let i = 0; i < rows.length; i++) {
-                                                    output.years.push(rows[i].Year);
-                                                    output.values.push(rows[i].NumericValue);
-                                                }
-
-                                                res.json(output);
-                                            }
-
-                                        } else {
-                                            conn.query(`DELETE FROM Indicator WHERE IndicatorShort=${mysql.escape(indicator)};`,
-                                                function (err, rows, fields) {
-                                                    res.json({"failed":"getIndicatorValues4"});
-                                                    res.status(500);
-                                                });
-                                        }
+                                      response = selectIndicators(qyear, rows3);
+                                      res.json(response);
                                     } else {
                                         res.json({"failed":"getIndicatorValues5 "+rows.length}); res.status(500);
                                     }
@@ -571,6 +529,51 @@ app.get("/getIndicator", function (req, res) {
             res.json({"failed":"getIndicator"}); res.status(500);
         } else {
             res.json(rows);
+        }
+    });
+});
+/**
+ * /getIndicatorsForCategory
+ * get indicators for a category
+ */
+app.get("/getIndicatorsForCategory", function(req, res){
+    let category = mysql.escape(req.query.category);
+    let statement = `SELECT * FROM Indicator WHERE Category=${category} ORDER BY IndicatorName;`;
+
+    conn.query(statement,function(err, rows, fields) {
+        if (err) {
+            console.log('Error during query select...');
+            res.json({"failed":"getIndicatorsForCategory"}); res.status(500);
+        } else {
+            let output = {};
+            for(let i = 0; i < rows.length; i++) {
+                output[rows[i].IndicatorShort] = rows[i].IndicatorName;
+            }
+            res.json(output);
+        }
+    });
+});
+
+/**
+ * /getIndicatorsForCountry
+ * get indicators for a country
+ */
+app.get("/getIndicatorsForCountry", function(req, res){
+    let indicator = req.query.indicator;
+    let country = req.query.country;
+    let statement = `SELECT IV.Country, I.IndicatorName, I.Category, I.URL, IV.Year, IV.Value, IV.NumericValue, IV.Sex FROM Indicator AS I INNER JOIN IndicatorValue AS IV ON IV.IndicatorShort = I.IndicatorShort
+                  WHERE I.IndicatorShort = ${mysql.escape(indicator)} AND IV.Country = ${mysql.escape(country)} AND IV.Sex = 'M' ORDER BY IV.Sex, IV.NumericValue;`;
+
+    conn.query(statement,function(err, rows, fields) {
+        if (err) {
+            console.log('Error during query select...');
+            res.json({"failed":"getIndicatorsForCategory"}); res.status(500);
+        } else {
+          if (rows.length >= 1) {
+            response = selectIndicators(null, rows);
+            //console.log(response);
+            res.json(response);
+          }
         }
     });
 });
