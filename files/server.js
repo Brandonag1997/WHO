@@ -333,6 +333,62 @@ app.get("/getIndicatorValues", function (req, res) {
     });
 });
 
+function insertIndicator(indicator, indicatorName) {
+  let URL = "https://ghoapi.azureedge.net/api/" + indicator;
+  request.get(URL, function (error, response, body) {
+      let json = JSON.parse(body);
+      let dataPoints = json.value;
+
+      let insertstatement = 'INSERT IGNORE INTO IndicatorValue (Year,Value,NumericValue,Sex,Country,IndicatorShort) VALUES ';
+
+      for (let i = 0; i < dataPoints.length; i++) {
+        let country;
+        let year;
+        let sex;
+        let value;
+        //only load in indicator values for countries
+        if (dataPoints[i].SpatialDimType=="COUNTRY") {
+          let countryCode = dataPoints[i].SpatialDim;
+          country = mysql.escape(Object.keys(countryToCode).find(key => countryToCode[key] === countryCode)); // ARG
+          if (dataPoints[i].TimeDimType=="YEAR") {
+            year = mysql.escape(dataPoints[i].TimeDim); // 2006
+          }
+
+          if (dataPoints[i].Dim1Type=="SEX") {
+            if (dataPoints[i].Dim1=="MLE") {
+              sex = "'M'";
+            } else if (dataPoints[i].Dim1=="FMLE") {
+              sex = "'F'";
+            } else if (dataPoints[i].Dim1=="BTSX") {
+              sex = "'B'";
+            }
+          } else {
+            sex="'?'";
+          }
+
+          value = mysql.escape(dataPoints[i].Value);
+          numericalvalue = mysql.escape(dataPoints[i].NumericValue);
+
+          if (insertstatement != 'INSERT IGNORE INTO IndicatorValue (Year,Value,NumericValue,Sex,Country,IndicatorShort) VALUES ') insertstatement += ",";
+          insertstatement += '(' + year + ',' + value + ',' + numericalvalue + ',' + sex + ',' + country + ',' + mysql.escape(indicator) + ')';
+        }
+      }
+
+      insertstatement += "ON DUPLICATE KEY UPDATE Year=VALUES(Year),Value=VALUES(Value),NumericValue=VALUES(NumericValue),Sex=VALUES(Sex),Country=VALUES(Country),IndicatorShort=VALUES(IndicatorShort);";
+
+      conn.query(insertstatement, function(err, rows2, fields){
+        if (err) {
+            console.log('Error updating ' + indicatorName + err.sqlMessage);
+            return "failed";
+        }
+        else {
+            console.log('Updated data for ' + indicatorName);
+            return indicatorName;
+        }
+      })
+      });
+}
+
 function updateIndicators() {
   let statement = 'SELECT I.IndicatorName, I.IndicatorShort FROM Indicator as I INNER JOIN (SELECT DISTINCT(IndicatorShort) from IndicatorValue) AS IV ON I.IndicatorShort = IV.IndicatorShort;'
   conn.query(statement,function(err, rows, fields) {
@@ -343,62 +399,37 @@ function updateIndicators() {
           for(let i = 0; i < rows.length; i++) {
               let indicator=rows[i].IndicatorShort;
               let indicatorName=rows[i].IndicatorName;
-              let URL = "https://ghoapi.azureedge.net/api/" + indicator;
-              request.get(URL, function (error, response, body) {
-                  let json = JSON.parse(body);
-                  let dataPoints = json.value;
-
-                  let insertstatement = 'INSERT IGNORE INTO IndicatorValue (Year,Value,NumericValue,Sex,Country,IndicatorShort) VALUES ';
-
-                  for (let i = 0; i < dataPoints.length; i++) {
-                    let country;
-                    let year;
-                    let sex;
-                    let value;
-                    //only load in indicator values for countries
-                    if (dataPoints[i].SpatialDimType=="COUNTRY") {
-                      let countryCode = dataPoints[i].SpatialDim;
-                      country = mysql.escape(Object.keys(countryToCode).find(key => countryToCode[key] === countryCode)); // ARG
-                      if (dataPoints[i].TimeDimType=="YEAR") {
-                        year = mysql.escape(dataPoints[i].TimeDim); // 2006
-                      }
-
-                      if (dataPoints[i].Dim1Type=="SEX") {
-                        if (dataPoints[i].Dim1=="MLE") {
-                          sex = "'M'";
-                        } else if (dataPoints[i].Dim1=="FMLE") {
-                          sex = "'F'";
-                        } else if (dataPoints[i].Dim1=="BTSX") {
-                          sex = "'B'";
-                        }
-                      } else {
-                        sex="'?'";
-                      }
-
-                      value = mysql.escape(dataPoints[i].Value);
-                      numericalvalue = mysql.escape(dataPoints[i].NumericValue);
-
-                      if (insertstatement != 'INSERT IGNORE INTO IndicatorValue (Year,Value,NumericValue,Sex,Country,IndicatorShort) VALUES ') insertstatement += ",";
-                      insertstatement += '(' + year + ',' + value + ',' + numericalvalue + ',' + sex + ',' + country + ',' + mysql.escape(indicator) + ')';
-                    }
-                  }
-
-                  insertstatement += "ON DUPLICATE KEY UPDATE Year=VALUES(Year),Value=VALUES(Value),NumericValue=VALUES(NumericValue),Sex=VALUES(Sex),Country=VALUES(Country),IndicatorShort=VALUES(IndicatorShort);";
-
-                  conn.query(insertstatement, function(err, rows2, fields){
-                    if (err) {
-                        console.log('Error updating ' + indicatorName + err.sqlMessage);
-                    }
-                    else {
-                        console.log('Updated data for ' + indicatorName);
-                    }
-                  })
-                  });
+              insertIndicator(indicator, indicatorName)
           }
       }
   });
 };
 
+/**
+  *
+  */
+
+app.get("/checkForIndicator", function(req, res){
+    let indicator = req.query.indicator;
+    let indicatorName = req.query.indicatorName;
+    let statement = `SELECT I.IndicatorShort, I.IndicatorName, COUNT(*) FROM IndicatorValue AS IV INNER JOIN Indicator AS I ON I.IndicatorShort = IV.IndicatorShort WHERE IV.IndicatorShort=${mysql.escape(indicator)} GROUP BY I.IndicatorShort, I.IndicatorName;`
+    conn.query(statement,function(err, rows, fields) {
+        if (err) {
+            console.log('Error during query select...' + err.sqlMessage);
+        } else {
+
+            if(rows.length<1) {
+                console.log("adding indicator");
+                response = insertIndicator(indicator, indicatorName);
+                res.json({"found": response});
+            } else {
+              res.json({"found": rows[0].IndicatorName});
+              console.log("indicator found");
+            }
+
+        }
+    });
+});
 
 /**
  * /getYearsForIndicator

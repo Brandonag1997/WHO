@@ -206,7 +206,7 @@
 				indicatorInfo.innerHTML = "";
 				let x = ""
 				for (let key in json) {
-					x += "<button type=\"button\" class=\"list-group-item list-group-item-action\" onclick=\"getYears('"+ key + "')\">" + json[key].split('(')[0] + "</button>";
+					x += "<button type=\"button\" class=\"list-group-item list-group-item-action\" onclick=\"getYears('"+ key + "','" + json[key] + "')\">" + json[key].split('(')[0] + "</button>";
 				}
 				indicatorInfo.innerHTML += x;
 				$("#years").fadeOut();
@@ -215,10 +215,9 @@
 		}
 
 		//triggered when user clicks on an indicator button
-		function getYears(indicator) {
+		function getYears(indicator, indicatorName) {
 			$("#loadingWrapper").fadeIn();
-			$.getJSON("getIndicatorValues?indicator=" + indicator, function(indicatorValues) { //is this being used?
-				//console.log(indicatorValues);
+			$.getJSON("checkForIndicator?indicator=" + indicator + "&indicatorName=" + indicatorName, function(indicatorValues) {
 				$("#loadingWrapper").fadeOut();
 				if(indicatorValues.failed) {
 					$("#error").fadeIn();
@@ -426,7 +425,7 @@
 						})
 						//console.log(data);
 						// Scale the range of the data
-						x.domain(d3.extent(data, function(d) { return d.year; }));
+						x.domain(d3.extent(data, function(d) { return d.year; })); //range of years
 						y.domain([0, d3.max(data, function(d) {
 							return Math.max(d.value); })]); //
 							//return Math.max(d.Imports, d.Exports);
