@@ -225,7 +225,6 @@
 
 					//gets a list of years and number of contries sampled per year for specified indicator and displays them on the page
 					$.getJSON("getYearsForIndicator?indicator=" + indicator, function (json) {
-						//console.log(json);
 						if(json.failed != null) {
 							$("#error").fadeIn();
 						} else {
@@ -241,7 +240,6 @@
 
 							if (json.length == 0) {
 								indicators2ignore.push(indicator);
-								//console.log(indicators2ignore);
 							}
 						}
 					});
@@ -252,18 +250,6 @@
 		//triggered when user clicks on a year button
 		//gets the indicator values for specified year and updates the map(changes colors of each country to reflect indicator value compared to other contries(High,Medium,Low)) on page
 		function getMap(indicator,year) {
-			// $.getJSON("getIndicatorValues?indicator=" + indicator , function(json) {
-			// 	console.log("indicator function");
-			// 	// console.log(json)
-			// 	 if(json.failed) {
-			// 		 $("#error").fadeIn();
-			// 		 console.log("error in indicator function");
-			// 	 } else {
-			// 		 $("#error").fadeOut();
-			// 		 timeJson = json;
-			// 	 }
-	    //       });
-
 			$.getJSON("getIndicatorValues?indicator=" + indicator + "&year=" + year , function(json) {
 				 if(json.failed) {
 					 $("#error").fadeIn();
@@ -307,8 +293,6 @@
 	    			word = x;
 	    		}
 	    	}
-	    	console.log(word);
-
 	    	//If the input is a valid country name execute the following
 	    	if(countryToCode[word]) {
 	    		//If there was a last country searched execute the following
@@ -377,38 +361,49 @@
 	    //Function to write the info to the info panel. It takes a geography object, which is a type of D3 json object
 			//trigegred when a user clicks a country
 	    function writeInfo(geography) {
-
-
-				function graphFunction(indicator) {
+				function graphFunction(indicator, indicatorName) {
 					let country = geography.properties.name;
-					var width = 400;
-					var height = 200;
+					// var x = d3.time.scale().range([0, width]);
+					// var y = d3.scale.linear().range([height, 0]);
+					//
+					// var xAxis = d3.svg.axis().scale(x)
+					// 		.orient("bottom").ticks(9)
+					// 		.tickFormat(parseTime);
+					//
+					// var yAxis = d3.svg.axis().scale(y)
+					// 		.orient("left").ticks(10);
+					function draw(data) {
 
-					// parse the date / time
-					var parseTime = d3.time.format("%Y").parse;
 
-					var x = d3.time.scale().range([0, width]);
-					var y = d3.scale.linear().range([height, 0]);
+						var width = 700;
+						var height = 400;
+						var padding = 100;
 
-					var xAxis = d3.svg.axis().scale(x)
-							.orient("bottom").ticks(9);
+						// parse the date / time
+						var parseTime = d3.time.format("%Y").parse;
 
-					var yAxis = d3.svg.axis().scale(y)
-							.orient("left").ticks(10);
+						var x = d3.time.scale().range([padding, width - padding]);
+						var y = d3.scale.linear().range([height - padding, padding]);
 
-					var valueline = d3.svg.line()
-							.x(function(d) { return x(d.year
-								); })
-							.y(function(d) { return y(d.value); });
+						var xAxis = d3.svg.axis()
+								.orient("bottom")
+								.scale(x)
+								.tickFormat(d3.format("d"));
 
-					d3.select("#testGraph").select("svg").remove();
-					var svg = d3.select("#testGraph").append("svg")
-							.attr("width", width)
-							.attr("height", height)
-							.style("fill", "none")
-							.style("stroke", "steelblue");
+						var yAxis = d3.svg.axis()
+								.orient("left")
+								.scale(y);
 
-					function draw(data, country) {
+						var valueline = d3.svg.line()
+								.x(function(d) { return x(d.year); })
+								.y(function(d) { return y(d.value); });
+
+						d3.select("#testGraph").select("svg").remove();
+						var svg = d3.select("#testGraph").append("svg")
+								.attr("width", width)
+								.attr("height", height)
+								.style("fill", "none")
+								.style("stroke", "steelblue");
 
 						var data = data[country];
 
@@ -423,45 +418,57 @@
 						data.sort(function(a, b){
 							return a["year"]-b["year"];
 						})
+
 						//console.log(data);
 						// Scale the range of the data
-						x.domain(d3.extent(data, function(d) { return d.year; })); //range of years
-						y.domain([0, d3.max(data, function(d) {
-							return Math.max(d.value); })]); //
+						// x.domain(d3.extent(data, function(d) { return d.year; })); //range of years
+						// y.domain([0, d3.max(data, function(d) { return Math.max(d.value); })]); //
+						x.domain(d3.extent(data,function(d) {return d.year; }));
+						y.domain([0, d3.max(data, function(d) { return Math.max(d.value); })]);
 							//return Math.max(d.Imports, d.Exports);
-
-						//var x_domain = d3.extent()
 
 						// Add the valueline path.
 						svg.append("path")
-								.data([data])
+								//.data([data])
 								.attr("class", "line")
-								.attr("d", valueline);
+								.attr("d", valueline(data));
 
 						// Add the X Axis
 						svg.append("g")
-								.attr("transform", "translate(0," + height + ")")
+								//.attr("class", "xaxis axis")
+								.attr("class", "x axis")
+								.attr("transform", "translate(0," + (height - padding) + ")")
 								.call(xAxis);
 
 						// Add the Y Axis
 						svg.append("g")
+								//.attr("class", "axis")
+								.attr("class", "y axis")
+								.attr("transform", "translate("+padding+",0)")
 								.call(yAxis);
+
+						svg.selectAll(".x axis text")
+								.attr("transform", function(d) {
+									return "translate(" + this.getBBox().height*-2 + "," + this.getBBox().height + ")rotate(-45)";
+								});
+
+						svg.append("text")
+								.attr("text-anchor", "middle")
+								.attr("transform", "translate("+ (padding/2) + "," + (height/2) +")rotate(-90)")
+								;//.text(indicatorName);
+
+						svg.append("text")
+								.attr("text-anchor", "middle")
+								.attr("transform", "translate(" + (width/2) + "," + (height-(padding/3)) + ")")
+								.text("Year");
 						}
 					$.getJSON( "/getIndicatorsForCountry?indicator=" + indicator + "&country=" + country, function( json ) {
 						if(json.failed) {
 							//$("#error").fadeIn();
 							console.log("error");
 						} else {
-							draw(json, country);
-							// // Get the data
-							// d3.json(json, function(error, data) {
-							// 	if (error) throw error;
-							//
-							// 	// trigger render
-							//
-							// 	console.log("drawing graph for " + country);
-							// 	draw(data, country);
-							// });
+							console.log(json);
+							draw(json);
 						}
 					});
 
@@ -475,7 +482,7 @@
         	var temp = geography.id;
         	if(infoJson) {
 						if (infoJson[temp]) {
-							graphFunction(infoJson[temp].data.IndicatorShort);
+							graphFunction(infoJson[temp].data.IndicatorShort, infoJson[temp].data.IndicatorName);
 							info.innerHTML += '<br><strong>Indicator:</strong> ' + infoJson[temp].data.IndicatorName +
 									'<br><strong>Category:</strong> ' + infoJson[temp].data.Category +
 									'<br><strong>Year:</strong> ' + infoJson[temp].data.Year +
