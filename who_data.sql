@@ -10,20 +10,21 @@ CREATE TABLE `Indicator` (
 
 CREATE TABLE `Country` (
   `DisplayName` varchar(200) PRIMARY KEY NOT NULL,
-  `CountryShort` varchar(45) NOT NULL
+  `CountryShort` varchar(45) NOT NULL,
+  `Region` varchar(45)
 );
 
 CREATE TABLE `IndicatorValue` (
   `IndicatorID` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
   `Year` year NOT NULL,
-  `Value` float NOT NULL,
+  `Value` varchar(200),
+  `NumericValue` float NOT NULL,
   `Sex` char,
   `Country` varchar(200),
-  `Region` varchar(45) NOT NULL,
   `IndicatorShort` varchar(45) NOT NULL
 );
 
 ALTER TABLE `IndicatorValue` ADD FOREIGN KEY (`IndicatorShort`) REFERENCES `Indicator` (`IndicatorShort`) ON DELETE CASCADE;
 ALTER TABLE `IndicatorValue` ADD FOREIGN KEY (`Country`) REFERENCES `Country` (`DisplayName`);
 
-CREATE UNIQUE INDEX `IndicatorValue_index_0` ON `IndicatorValue` (`Year`, `Value`, `Sex`, `Country`, `Region`, `IndicatorShort`);
+CREATE UNIQUE INDEX `IndicatorValue_index_0` ON `IndicatorValue` (`Year`, `Value`, `NumericValue`, `Sex`, `Country`, `IndicatorShort`);

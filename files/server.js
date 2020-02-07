@@ -593,7 +593,7 @@ app.get("/getIndicatorsForCountry", function(req, res){
     let indicator = req.query.indicator;
     let country = req.query.country;
     let statement = `SELECT IV.Country, I.IndicatorName, I.Category, I.URL, IV.Year, IV.Value, IV.NumericValue, IV.Sex FROM Indicator AS I INNER JOIN IndicatorValue AS IV ON IV.IndicatorShort = I.IndicatorShort
-                  WHERE I.IndicatorShort = ${mysql.escape(indicator)} AND IV.Country = ${mysql.escape(country)} AND IV.Sex = 'M' ORDER BY IV.Sex, IV.NumericValue;`;
+                  WHERE I.IndicatorShort = ${mysql.escape(indicator)} AND IV.Country = ${mysql.escape(country)} ORDER BY IV.Sex, IV.NumericValue;`;
 
     conn.query(statement,function(err, rows, fields) {
         if (err) {
