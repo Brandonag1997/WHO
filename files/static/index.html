@@ -326,7 +326,6 @@
 
 	    	/*
 	    	// Code to work with no levenstein distance
-
 	    	//If the input is a valid country name execute the following
 	    	if(countryToCode[countryInput]) {
 	    		//If there was a last country searched execute the following
@@ -346,11 +345,9 @@
     				}
     				oldCountry.style('fill', fill);
 	    		}
-
 	    		//set the lastCountrySearched
 	    		lastCountrySearched = countryToCode[countryInput];
 	    		let geoConfig = map.options.geographyConfig;
-
 	    		//Write the data of the new country to the info panel
 	        	let newCountry = map.svg.selectAll('path').filter(function(d) {
 	        		return d.id == countryToCode[countryInput];
@@ -490,6 +487,7 @@
 									'<br><strong><a target="_blank" href="'+ infoJson[temp].data.URL +'" class="text-primary">More information...</a></strong>';
 						} else {
 							info.innerHTML += '<br> No data available';
+							d3.select("#testGraph").select("svg").remove();
 						}
 					}
 					info2.innerHTML="<p class = \'h5\'>" + 'test' + "</p>";
@@ -559,6 +557,7 @@
 
 			$("#close").click(function(){
 				$("#infoContainer").fadeOut();
+				d3.select("#testGraph").select("svg").remove();
 			});
 		});
 	</script>
